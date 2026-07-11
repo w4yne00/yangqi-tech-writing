@@ -1,0 +1,11 @@
+{
+  "claims": [
+    {
+      "claim_id": "C-SMOKE-001",
+      "claim": "项目建成后安全事件处置时间缩短82%",
+      "status": "UNSUPPORTED",
+      "risk": "high",
+      "source_ref": ""
+    }
+  ]
+}
