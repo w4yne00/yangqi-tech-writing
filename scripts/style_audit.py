@@ -21,17 +21,21 @@ T2_GROUPS = {
 T3_WORDS = ("重要", "关键", "核心", "提升")
 
 
-def _mask_exempt(text: str) -> str:
+def _mask_exempt(text: str):
     patterns = (
         re.compile(r"```.*?```", re.DOTALL),
         re.compile(r"`[^`]*`"),
         re.compile(r"“[^”]*”"),
         re.compile(r'"[^"\n]*"'),
+        re.compile(r"(?m)^\s*>.*$"),
+        re.compile(r"(?m)^\s*(?:示例|反例|禁用词|问题词)(?:示例|说明)?\s*[：:].*$"),
     )
     masked = text
+    exempted = 0
     for pattern in patterns:
-        masked = pattern.sub(lambda match: " " * len(match.group(0)), masked)
-    return masked
+        masked, count = pattern.subn(lambda match: " " * len(match.group(0)), masked)
+        exempted += count
+    return masked, exempted
 
 
 def _cv(values) -> float:
@@ -45,22 +49,28 @@ def _cv(values) -> float:
 
 
 def audit_text(text: str) -> dict:
-    masked = _mask_exempt(text)
+    masked, exempted_count = _mask_exempt(text)
     hits = []
     for phrase in T1_PATTERNS:
         for match in re.finditer(re.escape(phrase), masked):
-            hits.append({"tier": "T1", "pattern": phrase, "start": match.start()})
+            hits.append({"tier": "T1", "pattern": phrase, "start": match.start(),
+                         "context": "body", "occurrences": 1})
 
     paragraphs = [part.strip() for part in re.split(r"\n\s*\n", masked) if part.strip()]
     for index, paragraph in enumerate(paragraphs, start=1):
         for group, words in T2_GROUPS.items():
-            found = [word for word in words if word in paragraph]
-            if len(found) >= 2:
+            occurrences = [(match.start(), word) for word in words
+                           for match in re.finditer(re.escape(word), paragraph)]
+            occurrences.sort()
+            found = list(dict.fromkeys(word for _, word in occurrences))
+            if len(occurrences) >= 2:
                 hits.append({
                     "tier": "T2",
                     "pattern": group,
                     "paragraph": index,
                     "matches": found,
+                    "occurrences": len(occurrences),
+                    "context": "body",
                 })
 
     visible_chars = len(re.sub(r"\s+", "", masked))
@@ -68,7 +78,8 @@ def audit_text(text: str) -> dict:
         count = masked.count(word)
         density = count / visible_chars if visible_chars else 0.0
         if count:
-            hits.append({"tier": "T3", "pattern": word, "count": count, "density": density})
+            hits.append({"tier": "T3", "pattern": word, "count": count, "density": density,
+                         "context": "body", "occurrences": count})
 
     sentences = [
         part.strip()
@@ -88,13 +99,15 @@ def audit_text(text: str) -> dict:
         "paragraph_length_cv": _cv(paragraph_lengths),
     }
     return {
-        "hits": sorted(hits, key=lambda item: (item["tier"], item.get("start", -1))),
+        "hits": sorted(hits, key=lambda item: (item["tier"], item.get("start", -1),
+                                                item.get("paragraph", -1), item["pattern"])),
         "metrics": metrics,
         "summary": {
             "t1": sum(hit["tier"] == "T1" for hit in hits),
             "t2": sum(hit["tier"] == "T2" for hit in hits),
             "t3": sum(hit["tier"] == "T3" for hit in hits),
             "authorship_verdict": "not_applicable",
+            "exempted_count": exempted_count,
         },
     }
 

@@ -1,6 +1,6 @@
 {
   "skill_name": "yangqi-tech-writing",
-  "version": "v1.1.0",
+  "version": "v1.0-design",
   "dataset_purpose": "首批设计验收案例；主 Skill 初稿完成后用于有 Skill/无 Skill 对照",
   "source_policy": "案例正文以脱敏合成为主，公开法规和规范仅用于名称、语体和保护片段校准，不大段复制受限正文",
   "evals": [
@@ -380,69 +380,8 @@
       "expected_output": "只输出1至5个关键问题，每项包含问题族、触发点、建议动作、风险级别和是否建议改写；不得附完整重写版本。",
       "expectations": [
         "只输出1至5个最高价值问题，不附全文改写稿。",
-        "每项均包含定位、问题类型、影响、风险级别、建议动作和是否建议改写。",
+        "每项均包含问题族、触发点、建议动作、风险级别和是否建议改写。",
         "发现应聚焦宏大背景、全面赋能、机械三项形容和无证据效果承诺等输入中的实际问题。"
-      ],
-      "files": []
-    },
-    {"id":25,"case_id":"H-PROT-25","name":"扩展标准编号保持","category":"protected_near_miss","scene":"technical-spec","prompt":"原位修订并保持标准编号。","input_text":"系统应符合JR/T 0071—2020和ISO/IEC 27001:2022。","expected_output":"两个标准编号逐字保留。","expectations":["逐字保留JR/T 0071—2020","逐字保留ISO/IEC 27001:2022"],"files":[]},
-    {"id":26,"case_id":"H-PROT-26","name":"路径近失配不当标准","category":"protected_near_miss","scene":"architecture-design","prompt":"检查保护项。","input_text":"样例位于docs/T 0071/example目录。","expected_output":"不得把路径片段当成团体标准。","expectations":["不识别docs/T 0071/example为标准","不改变路径内容"],"files":[]},
-    {"id":27,"case_id":"H-PROT-27","name":"日期区间与复合责任保持","category":"protected_near_miss","scene":"security-policy","prompt":"原位修订并保持责任时限。","input_text":"建设单位和运维单位应于2026年7月1日至8月31日完成联调。","expected_output":"责任主体和日期区间保持。","expectations":["保留建设单位和运维单位","保留完整日期区间和应"],"files":[]},
-    {"id":28,"case_id":"H-PROT-28","name":"普通年份单位不误保护","category":"protected_near_miss","scene":"feasibility-study","prompt":"检查保护项与模板感。","input_text":"2026年持续推进，各单位结合实际研究。","expected_output":"不把裸年份和泛称单位当作完整保护实体。","expectations":["不识别2026年为完整日期","不识别泛称单位为具体责任主体"],"files":[]},
-    {"id":29,"case_id":"H-AUD-29","name":"教学引用豁免","category":"audit_near_miss","scene":"security-policy","prompt":"审阅教学材料。","input_text":"> 反例：本项目具有重要里程碑意义。\n\n禁用词示例：全面赋能。","expected_output":"被讨论表达不作为正文命中。","expectations":["引用块中的里程碑被豁免","禁用词示例中的全面赋能被豁免"],"files":[]},
-    {"id":30,"case_id":"H-AUD-30","name":"正文相同短语仍命中","category":"audit_near_miss","scene":"presentation","prompt":"审阅正文模板感。","input_text":"本项目将全面赋能各单位，打造行业标杆。","expected_output":"正文宣传表达应被识别。","expectations":["识别全面赋能","识别行业标杆"],"files":[]},
-    {"id":31,"case_id":"H-AUD-31","name":"技术字段闭环不误杀","category":"audit_near_miss","scene":"architecture-design","prompt":"检查技术说明。","input_text":"字段event_closed表示事件闭环状态。","expected_output":"字段语境不判为空泛口号。","expectations":["保留字段名event_closed","不把事件闭环状态判为空泛宣传"],"files":[]},
-    {"id":32,"case_id":"H-AUD-32","name":"空泛闭环口号命中","category":"audit_near_miss","scene":"security-policy","prompt":"审阅制度表述。","input_text":"各单位应强化协同联动，形成管理闭环。","expected_output":"指出缺少主体动作和验证方式。","expectations":["识别形成管理闭环的空泛性","不得自行补部门或时限"],"files":[]},
-    {"id":33,"case_id":"H-COMP-33","name":"可研架构参数复合路由","category":"composite_scene","scene":"feasibility-study","prompt":"按可研语体审阅，其中参数段原位保护。","input_text":"项目建议分期建设。架构参数：核心业务RTO为30分钟，RPO为5分钟。","expected_output":"整体按可研，参数段按架构保护。","expectations":["保留可研建议语体","逐字保留RTO和RPO"],"files":[]},
-    {"id":34,"case_id":"H-COMP-34","name":"投标招标原文复合路由","category":"composite_scene","scene":"bid-response","prompt":"只改响应说明，招标原文不动。","input_text":"招标原文：系统应支持双因素认证。响应说明：全面领先，完全满足。","expected_output":"保护招标原文，仅处理无证据响应。","expectations":["招标原文和应保持","处理全面领先并要求证据"],"files":[]},
-    {"id":35,"case_id":"H-COMP-35","name":"汇报验收结论复合路由","category":"composite_scene","scene":"presentation","prompt":"整理成汇报页，验收结论不得改。","input_text":"验收结论：同意通过初步验收。当前仍有两项问题待关闭。","expected_output":"可重排页稿但保护验收结论。","expectations":["逐字保留初步验收","保留两项问题待关闭"],"files":[]},
-    {"id":36,"case_id":"H-COMP-36","name":"制度纪要复合路由","category":"composite_scene","scene":"security-policy","prompt":"审阅制度附件纪要，保持意见归属。","input_text":"制度要求：所属单位不得关闭代理。专家甲：建议补充例外审批流程。","expected_output":"制度强度和专家意见分别保护。","expectations":["保留不得和所属单位","保留专家甲意见归属"],"files":[]},
-    {"id":37,"case_id":"H-ANN-37","name":"Annotation只诊断","category":"annotation","scene":"presentation","prompt":"只标问题，不要改稿，最多五条。","input_text":"本项目将全面赋能各单位，打造行业标杆。","expected_output":"只给诊断项。","expectations":["不输出改写稿或完整改写稿。","每项包含定位、问题类型、影响、风险级别、建议动作和是否建议改写。"],"files":[]},
-    {"id":38,"case_id":"H-ANN-38","name":"Annotation无问题不凑数","category":"annotation","scene":"technical-spec","prompt":"只标问题，没有问题就直说。","input_text":"系统应记录策略发布人、发布时间和变更内容。","expected_output":"明确无需调整。","expectations":["明确说明无需调整，不制造占位问题。","不输出改写稿或完整改写稿。"],"files":[]},
-    {"id":39,"case_id":"H-EVD-39","name":"冲突来源阻断","category":"evidence_gate","scene":"review-acceptance","prompt":"根据两份材料形成验收判断。","input_text":"材料A称完成全部整改；材料B称仍有两项未关闭。","expected_output":"标记CONTRADICTED并阻断结论。","expectations":["指出两份来源冲突","不得输出通过验收结论"],"files":[]},
-    {"id":40,"case_id":"H-EVD-40","name":"无来源比较结论阻断","category":"evidence_gate","scene":"technical-spec","prompt":"把产品优势写进技术要求。","input_text":"该产品检测能力优于业内同类产品，但没有测试或来源。","expected_output":"比较性结论标为高风险UNSUPPORTED。","expectations":["要求测试或来源","不得保留为已证实结论"],"files":[]},
-    {
-      "id": 41,
-      "case_id": "C-CAU-41",
-      "name": "上游延期不得转移为下游已延期",
-      "category": "causal_boundary",
-      "scene": "presentation",
-      "prompt": "整理为一页汇报文字稿，保留验收结论和必要风险提示。",
-      "input_text": "问题2尚未完成。两家单位网络策略调整较该事项原计划晚12天。验收纪要明确：承建方应于2026年9月30日前完成问题2整改，监理方应于2026年10月8日前完成复核。",
-      "expected_output": "保留事实并将下游影响写成风险，不把问题2写成已延期。",
-      "expectations": [
-        "保留问题2尚未完成、网络策略调整晚12天、整改与复核日期。",
-        "使用可能影响或存在风险描述下游节点，不写问题2已延期、已滞后或已逾期。"
-      ],
-      "files": []
-    },
-    {
-      "id": 42,
-      "case_id": "C-CAU-42",
-      "name": "未完成且无计划基线不得判定延期",
-      "category": "causal_boundary",
-      "scene": "presentation",
-      "prompt": "压缩成项目进展页，只保留事实和必要风险。",
-      "input_text": "接口联调问题尚未完成，责任单位正在核对配置。材料未提供计划完成日期和延期结论。",
-      "expected_output": "说明尚未完成和待跟踪，不判定已延期。",
-      "expectations": [
-        "保留接口联调问题尚未完成和责任单位正在核对配置。",
-        "不得写已延期、已滞后或已逾期。"
-      ],
-      "files": []
-    },
-    {
-      "id": 43,
-      "case_id": "C-CAU-43",
-      "name": "明确逾期允许写成事实",
-      "category": "causal_boundary",
-      "scene": "presentation",
-      "prompt": "整理为一页整改进展汇报，准确说明节点状态。",
-      "input_text": "截至2026年10月2日，承建方仍未完成问题2整改；验收纪要要求承建方于2026年9月30日前完成。",
-      "expected_output": "可以明确问题2整改已逾期，并保留依据。",
-      "expectations": [
-        "明确问题2整改已逾期。",
-        "保留2026年10月2日、2026年9月30日和承建方。"
       ],
       "files": []
     }

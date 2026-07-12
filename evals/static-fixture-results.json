@@ -1,0 +1,13 @@
+{
+  "version": "v1.1.0",
+  "evidence_type": "deterministic-static-fixture",
+  "model_execution": false,
+  "case_ids": [25, 27, 29, 31, 33, 35, 37, 39],
+  "case_count": 8,
+  "assertions": {
+    "passed": 16,
+    "failed": 0,
+    "total": 16
+  },
+  "statement": "8 组确定性规则夹具、16 条静态断言全部通过。该结果验证规则覆盖和测试数据一致性，不代表模型运行通过率。"
+}

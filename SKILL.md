@@ -1,7 +1,6 @@
 ---
 name: yangqi-tech-writing
-description: G 企网络安全与信息化技术材料的起草、审阅和保真改写技能。凡用户涉及可研、初设、详设、总体架构、技术规范、招标需求、投标应答、安全制度、应急预案、汇报PPT文字稿、评审意见、验收报告或会议纪要，且需要正式技术写作、去AI模板感、保留事实术语责任或检查证据时，都应使用本技能。
-compatibility: Requires file reading; optional Python 3.9 standard-library scripts provide deterministic audits.
+description: G 企网络安全与信息化技术材料的起草、审阅和保真改写技能。凡用户涉及可研、初设、详设、总体架构、技术规范、招标需求、投标应答、安全制度、应急预案、汇报PPT文字稿、评审意见、验收报告或会议纪要，且需要正式技术写作、去AI模板感、保留条款事实术语责任数字或检查证据时，都应使用本技能，即使用户未明确说“去AI味”。不用于纯排版或文件转换、技术正确性判断、普通代码、宣传文案和个人语言模仿。
 ---
 
 # G 企网络安全与信息化技术写作
@@ -46,6 +45,8 @@ compatibility: Requires file reading; optional Python 3.9 standard-library scrip
 | 评审、验收、会议纪要 | 专家意见、验收结论、整改、遗留问题 | `minimal / in-place` | [评审验收场景包](references/scene-packs/review-acceptance.md) |
 
 场景不明但出现合同、制度、招标、验收或正式结论时，采用 `minimal + in-place + audit-only`。用户确认用途后才能扩大范围。复合文档按“主文种决定语域、局部文种决定保护边界”处理。
+
+复合文档执行[复合文种路由](references/composite-routing.md)：主文种决定整体语域，局部文种决定保护项和删改权限；局部规则风险更高时优先。
 
 ## 保护项与证据
 
@@ -112,7 +113,7 @@ compatibility: Requires file reading; optional Python 3.9 standard-library scrip
 
 ### Annotation mode
 
-用户要求“只标问题、不改原文”时，输出 1—5 个最高价值发现。每项包含定位、问题类型、影响和建议；不输出改写稿。没有实质问题时明确说明，不为了凑数制造问题。
+用户要求“只标问题、不改原文”时，只输出诊断，不输出改写稿，也不输出完整改写稿。输出 1—5 个最高价值发现，每项包含定位、问题类型、影响、风险级别、建议动作和是否建议改写。定位引用原文片段、条款号、页标题或段落位置；风险级别使用高、中、低，不与 T1/T2/T3 混用；是否建议改写使用是、否、待确认。用户明确要求简短时可以压缩字段表达，但不得省略高风险判断。没有实质问题时明确说明无需调整，不为了凑数制造问题。
 
 ## 两遍复读
 
@@ -130,6 +131,8 @@ compatibility: Requires file reading; optional Python 3.9 standard-library scrip
 ## 脚本路由
 
 脚本均只用 Python 标准库，输出 JSON：
+
+技能主体只要求读取文本文件；三个可选审计脚本兼容 Python 3.9 及以上版本，并且只使用标准库。
 
 ```bash
 python3 scripts/protected_diff.py before.md after.md

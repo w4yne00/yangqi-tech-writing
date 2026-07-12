@@ -2,6 +2,7 @@
 """Validate an evidence ledger."""
 
 import argparse
+from collections import Counter
 import json
 from pathlib import Path
 
@@ -29,6 +30,7 @@ def validate_ledger(ledger: dict) -> dict:
         }
 
     seen = set()
+    status_counts = Counter()
     for index, claim in enumerate(ledger["claims"], start=1):
         if not isinstance(claim, dict):
             errors.append("claim %d must be an object" % index)
@@ -46,6 +48,7 @@ def validate_ledger(ledger: dict) -> dict:
         if status not in VALID_STATUSES:
             errors.append("%s: invalid status %s" % (claim_id, status))
             continue
+        status_counts[status] += 1
         if risk not in VALID_RISKS:
             errors.append("%s: invalid risk %s" % (claim_id, risk))
             continue
@@ -53,16 +56,21 @@ def validate_ledger(ledger: dict) -> dict:
             errors.append("%s: SUPPORTED requires source_ref" % claim_id)
         if status in {"CONTRADICTED", "NEEDS_USER_CONFIRMATION"}:
             blockers.append(claim_id)
+            if status == "CONTRADICTED" and not str(claim.get("conflict_ref", "")).strip():
+                warnings.append("%s: CONTRADICTED should include conflict_ref" % claim_id)
         elif status == "UNSUPPORTED" and risk == "high":
             blockers.append(claim_id)
         elif status == "UNSUPPORTED":
             warnings.append("%s: unsupported %s-risk claim" % (claim_id, risk))
+        elif status == "OPINION" and not str(claim.get("owner", "")).strip():
+            warnings.append("%s: OPINION should include owner" % claim_id)
 
     return {
         "passed": not errors and not blockers,
-        "errors": errors,
-        "warnings": warnings,
-        "blockers": blockers,
+        "errors": sorted(errors),
+        "warnings": sorted(warnings),
+        "blockers": sorted(blockers),
+        "status_counts": {key: status_counts[key] for key in sorted(status_counts)},
     }
 
 

@@ -1,0 +1,22 @@
+[
+  {"query":"按可研报告语体改写建设必要性，金额和批复文号不要动。","should_trigger":true,"category":"feasibility","rationale":"正式可研改写且要求保护事实"},
+  {"query":"帮我审阅这段初设部署说明，保留RTO、RPO和系统名称。","should_trigger":true,"category":"architecture","rationale":"初设审阅与参数保护"},
+  {"query":"这份技术规范只检查条款强度和验收可测性，不要补参数。","should_trigger":true,"category":"technical_spec","rationale":"正式规范审阅"},
+  {"query":"把投标逐条响应改得更扎实，招标原文和证明材料编号原样保留。","should_trigger":true,"category":"bid","rationale":"投标应答保真改写"},
+  {"query":"审阅应急预案职责章节，检查主体、时限和上报对象。","should_trigger":true,"category":"policy","rationale":"制度预案责任审阅"},
+  {"query":"整理一页领导汇报文字稿，延期风险和所有数字必须保留。","should_trigger":true,"category":"presentation","rationale":"正式汇报材料"},
+  {"query":"只标出验收报告最主要的问题，不要改正式结论。","should_trigger":true,"category":"review","rationale":"验收Annotation任务"},
+  {"query":"这份可研里夹着架构参数表，整体语体统一但参数段不要重写。","should_trigger":true,"category":"composite","rationale":"复合文种路由"},
+  {"query":"检查文中的投资收益和能力对比有没有来源，缺证据就列待确认。","should_trigger":true,"category":"evidence","rationale":"正式材料证据检查"},
+  {"query":"起草安全管理制度章节，只使用我给的职责和流程事实。","should_trigger":true,"category":"drafting","rationale":"正式制度新建"},
+  {"query":"把这个Word的一级标题改成黑体三号并更新页码。","should_trigger":false,"category":"formatting","rationale":"纯排版任务"},
+  {"query":"把PDF转换成可编辑DOCX，尽量保持表格。","should_trigger":false,"category":"formatting","rationale":"文件转换任务"},
+  {"query":"双活数据库跨城部署，20毫秒链路能否保证强一致？","should_trigger":false,"category":"technical_correctness","rationale":"纯技术正确性分析"},
+  {"query":"给出Log4j漏洞的修复命令和版本建议。","should_trigger":false,"category":"technical_correctness","rationale":"漏洞处置技术问答"},
+  {"query":"写一个Python脚本解析防火墙日志并输出CSV。","should_trigger":false,"category":"code","rationale":"普通代码编写"},
+  {"query":"模仿我们领导平时讲话的口头禅写一篇发言稿。","should_trigger":false,"category":"personal_imitation","rationale":"个人语言模仿"},
+  {"query":"把这篇公众号文章写得轻松有趣，多用故事和金句。","should_trigger":false,"category":"general_content","rationale":"通用内容写作"},
+  {"query":"为新品发布写一篇热血新闻稿，突出行业领先。","should_trigger":false,"category":"general_content","rationale":"宣传新闻稿"},
+  {"query":"总结这篇网络安全新闻的主要观点。","should_trigger":false,"category":"general_content","rationale":"普通摘要"},
+  {"query":"从这份表格里提取IP地址和端口，输出JSON。","should_trigger":false,"category":"code","rationale":"数据提取而非正式写作"}
+]

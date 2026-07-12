@@ -7,6 +7,10 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 
+ANNOTATION_FIELDS = (
+    "定位", "问题类型", "影响", "风险级别", "建议动作", "是否建议改写",
+)
+
 REQUIRED_FILES = [
     "SKILL.md",
     "README.md",
@@ -55,6 +59,16 @@ class StructureTests(unittest.TestCase):
             "起草", "审阅", "改写", "去AI", "证据",
         ]:
             self.assertIn(phrase, description)
+        for phrase in ["不用于", "技术正确性", "排版"]:
+            self.assertIn(phrase, description)
+
+    def test_frontmatter_uses_portable_fields_only(self):
+        content = (ROOT / "SKILL.md").read_text(encoding="utf-8")
+        match = re.match(r"^---\n(.*?)\n---\n", content, re.DOTALL)
+        self.assertIsNotNone(match)
+        metadata = yaml.safe_load(match.group(1))
+        self.assertEqual({"name", "description"}, set(metadata))
+        self.assertNotIn("compatibility", metadata)
 
     def test_skill_is_progressive_and_execution_order_is_fixed(self):
         content = (ROOT / "SKILL.md").read_text(encoding="utf-8")
@@ -70,6 +84,11 @@ class StructureTests(unittest.TestCase):
         self.assertIn("Annotation mode", content)
         self.assertIn("默认输出合同", content)
         self.assertIn("不输出改写稿", content)
+        annotation = content.split("### Annotation mode", 1)[1].split("\n## ", 1)[0]
+        for field in ANNOTATION_FIELDS:
+            self.assertIn(field, annotation)
+        for value in ("高", "中", "低", "是", "否", "待确认"):
+            self.assertIn(value, annotation)
 
     def test_linked_local_references_exist(self):
         content = (ROOT / "SKILL.md").read_text(encoding="utf-8")
