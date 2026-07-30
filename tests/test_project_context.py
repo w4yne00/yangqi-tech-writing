@@ -114,8 +114,15 @@ class ProjectContextTests(unittest.TestCase):
     def test_upstream_change_marks_dependent_conclusions_and_traces_for_review(self):
         with tempfile.TemporaryDirectory() as directory:
             context_path = Path(directory) / "project-context.json"
+            initial_request = deepcopy(self.fixture["confirmed_update"])
+            initial_request["update"]["conclusions"][0][
+                "source_material_ids"
+            ] = []
+            initial_request["update"]["trace_links"][0][
+                "source_material_ids"
+            ] = []
             initial = self.run_request(
-                deepcopy(self.fixture["confirmed_update"]),
+                initial_request,
                 context_path,
             )
             self.assertEqual(0, initial.returncode, initial.stderr)
@@ -135,13 +142,17 @@ class ProjectContextTests(unittest.TestCase):
             self.assertEqual(["TRACE-001"], invalidated["trace_ids"])
             self.assertEqual(["DECISION-001"], invalidated["decision_ids"])
             self.assertEqual(["REL-GOVERNS"], invalidated["relation_ids"])
+            self.assertEqual(["FACT-001"], invalidated["fact_ids"])
+            self.assertEqual(["CONFLICT-001"], invalidated["conflict_ids"])
 
             context = self.load_context(context_path)
             self.assertEqual(2, context["revision"])
             for key in (
+                "confirmed_facts",
                 "confirmed_relationships",
                 "decisions",
                 "conclusions",
+                "conflicts",
                 "trace_links",
             ):
                 self.assertEqual("pending_review", context[key][0]["review_status"])
@@ -159,14 +170,76 @@ class ProjectContextTests(unittest.TestCase):
             )
             self.assertEqual(0, initial.returncode, initial.stderr)
             original_bytes = context_path.read_bytes()
+            for status in ("confirmed", "rejected", "pending"):
+                with self.subTest(status=status):
+                    request = deepcopy(self.fixture["upstream_change"])
+                    request["project_id"] = "SYNTHETIC-PROJECT-B"
+                    request["confirmation"]["status"] = status
+
+                    completed = self.run_request(request, context_path)
+
+                    self.assertEqual(1, completed.returncode)
+                    error = json.loads(completed.stderr)
+                    self.assertEqual(
+                        "project_isolation_violation", error["error"]
+                    )
+                    self.assertEqual(
+                        original_bytes, context_path.read_bytes()
+                    )
+
+    def test_existing_package_must_keep_local_only_declarations(self):
+        invalid_declarations = [
+            ("storage", "remote_service"),
+            ("external_services", "enabled"),
+        ]
+        with tempfile.TemporaryDirectory() as directory:
+            for index, (field, value) in enumerate(invalid_declarations):
+                with self.subTest(field=field):
+                    context_path = (
+                        Path(directory) / "declaration-{}.json".format(index)
+                    )
+                    initial = self.run_request(
+                        deepcopy(self.fixture["confirmed_update"]),
+                        context_path,
+                    )
+                    self.assertEqual(0, initial.returncode, initial.stderr)
+                    context = self.load_context(context_path)
+                    context[field] = value
+                    tampered = json.dumps(
+                        context, ensure_ascii=False, indent=2
+                    ) + "\n"
+                    context_path.write_text(tampered, encoding="utf-8")
+
+                    completed = self.run_request(
+                        deepcopy(self.fixture["upstream_change"]),
+                        context_path,
+                    )
+
+                    self.assertEqual(1, completed.returncode)
+                    error = json.loads(completed.stderr)
+                    self.assertEqual("invalid_request", error["error"])
+                    self.assertIn(field, error["message"])
+                    self.assertEqual(
+                        tampered, context_path.read_text(encoding="utf-8")
+                    )
+
+    def test_revision_mismatch_rejects_update_without_mutation(self):
+        with tempfile.TemporaryDirectory() as directory:
+            context_path = Path(directory) / "project-context.json"
+            initial = self.run_request(
+                deepcopy(self.fixture["confirmed_update"]),
+                context_path,
+            )
+            self.assertEqual(0, initial.returncode, initial.stderr)
+            original_bytes = context_path.read_bytes()
             request = deepcopy(self.fixture["upstream_change"])
-            request["project_id"] = "SYNTHETIC-PROJECT-B"
+            request["expected_revision"] = 0
 
             completed = self.run_request(request, context_path)
 
             self.assertEqual(1, completed.returncode)
             error = json.loads(completed.stderr)
-            self.assertEqual("project_isolation_violation", error["error"])
+            self.assertEqual("revision_conflict", error["error"])
             self.assertEqual(original_bytes, context_path.read_bytes())
 
     def test_secret_account_and_unnecessary_personal_data_are_not_persisted(self):
@@ -174,6 +247,8 @@ class ProjectContextTests(unittest.TestCase):
             ("api_token", "ghp_0123456789abcdefghijklmnopqrstuvwxyz"),
             ("text", "测试联系人邮箱为 user@example.com"),
             ("text", "真实账号为 project-admin"),
+            ("text", "访问令牌是 synthetic-credential-value"),
+            ("text", "口令为 synthetic-credential-value"),
         ]
         with tempfile.TemporaryDirectory() as directory:
             for index, (field, value) in enumerate(unsafe_values):

@@ -148,8 +148,11 @@ SENSITIVE_VALUES = (
     re.compile(r"(?<!\d)\d{17}[\dXx](?!\d)"),
     re.compile(r"(?:真实)?(?:账号|用户名)\s*(?:为|是|[:：=])\s*\S+"),
     re.compile(
-        r"(?:password|passwd|passphrase|secret|token|api[_-]?key|"
-        r"口令|密码|密钥|令牌)\s*[:=：]\s*\S+",
+        r"(?:(?:access|api)[ _-]?)?"
+        r"(?:password|passwd|passphrase|secret|token|key)"
+        r"\s*(?:is|[:=：])\s*\S+|"
+        r"(?:访问)?(?:口令|密码|密钥|令牌)"
+        r"\s*(?:为|是|[:=：])\s*\S+",
         re.IGNORECASE,
     ),
 )
@@ -395,6 +398,12 @@ def validate_package(package):
         )
     if package.get("artifact_type") != ARTIFACT_TYPE:
         raise ContextError("project_context.artifact_type 不受支持")
+    if package.get("storage") != "local_file":
+        raise ContextError("project_context.storage 必须为 local_file")
+    if package.get("external_services") != "disabled":
+        raise ContextError(
+            "project_context.external_services 必须为 disabled"
+        )
     require_text(package, "project_id", "project_context")
     revision = package.get("revision")
     if (
@@ -464,28 +473,79 @@ def material_dependencies(item, collection):
     return dependencies
 
 
+def set_pending_review(item, stale_material_ids):
+    previous = set(item.get("stale_due_to_material_ids", []))
+    item["review_status"] = "pending_review"
+    item["stale_due_to_material_ids"] = sorted(
+        previous | set(stale_material_ids)
+    )
+
+
 def mark_stale(package, changed_material_ids):
-    targets = (
+    direct_targets = (
         ("confirmed_facts", "fact_id", "fact_ids"),
         ("confirmed_relationships", "relation_id", "relation_ids"),
         ("decisions", "decision_id", "decision_ids"),
         ("conclusions", "conclusion_id", "conclusion_ids"),
-        ("trace_links", "trace_id", "trace_ids"),
+        ("conflicts", "conflict_id", "conflict_ids"),
     )
     invalidated = {"material_ids": sorted(changed_material_ids)}
-    for collection, id_field, result_field in targets:
+    stale_refs = set()
+    record_by_ref = {}
+    result_field_by_ref = {}
+    for collection, id_field, result_field in direct_targets:
         invalidated[result_field] = []
         for item in package[collection]:
+            record_id = item[id_field]
+            record_by_ref[record_id] = item
+            result_field_by_ref[record_id] = result_field
             stale_ids = sorted(
                 material_dependencies(item, collection)
                 & changed_material_ids
             )
             if not stale_ids:
                 continue
-            item["review_status"] = "pending_review"
-            item["stale_due_to_material_ids"] = stale_ids
-            invalidated[result_field].append(item[id_field])
+            set_pending_review(item, stale_ids)
+            invalidated[result_field].append(record_id)
+            stale_refs.add(record_id)
         invalidated[result_field].sort()
+
+    invalidated["trace_ids"] = []
+    changed = True
+    while changed:
+        changed = False
+        for trace in package["trace_links"]:
+            trace_id = trace["trace_id"]
+            direct_stale = bool(
+                material_dependencies(trace, "trace_links")
+                & changed_material_ids
+            )
+            from_stale = trace["from_ref"] in stale_refs
+            to_stale = trace["to_ref"] in stale_refs
+            trace_stale = direct_stale or from_stale or to_stale
+            if (
+                trace_stale
+                and trace_id not in invalidated["trace_ids"]
+            ):
+                set_pending_review(trace, changed_material_ids)
+                invalidated["trace_ids"].append(trace_id)
+                changed = True
+
+            if not (direct_stale or from_stale):
+                continue
+            target_ref = trace["to_ref"]
+            target = record_by_ref.get(target_ref)
+            result_field = result_field_by_ref.get(target_ref)
+            if target is None or target_ref in stale_refs:
+                continue
+            set_pending_review(target, changed_material_ids)
+            invalidated[result_field].append(target_ref)
+            stale_refs.add(target_ref)
+            changed = True
+
+    for result_field in invalidated:
+        if result_field != "material_ids":
+            invalidated[result_field].sort()
     return invalidated
 
 
@@ -643,10 +703,10 @@ def run(raw_request, context_path=None):
             "not_requested",
             reason="single_task_without_persistence",
         )
+    package = load_package(context_path, project_id)
     if status in {"rejected", "pending"}:
         return build_result(project_id, status, reason="no_file_change")
 
-    package = load_package(context_path, project_id)
     expected_revision = request["expected_revision"]
     if (
         expected_revision is not None
