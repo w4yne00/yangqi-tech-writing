@@ -267,6 +267,32 @@ class MaterialContractRegistryTests(unittest.TestCase):
             {}, result["evidence_summary"]["eligible_case_counts"]
         )
 
+    def test_simulated_forward_metadata_requires_recorded_model_execution(self):
+        bundle = self.base_bundle()
+        sample = self.simulate_real_case_metadata(bundle)
+        sample["case_type"] = "forward_validation"
+        sample["model_execution"] = False
+
+        without_execution = self.run_bundle(bundle)
+
+        self.assertEqual(
+            0, without_execution.returncode, without_execution.stderr
+        )
+        result = json.loads(without_execution.stdout)
+        self.assertEqual(
+            {}, result["evidence_summary"]["eligible_case_counts"]
+        )
+
+        sample["model_execution"] = True
+        with_execution = self.run_bundle(bundle)
+
+        self.assertEqual(0, with_execution.returncode, with_execution.stderr)
+        result = json.loads(with_execution.stdout)
+        self.assertEqual(
+            {"forward_validation": 1},
+            result["evidence_summary"]["eligible_case_counts"],
+        )
+
     def test_synthetic_cases_cannot_unlock_deep_support(self):
         bundle = self.base_bundle()
         bundle["contract"]["support_level"] = "deep_support"
