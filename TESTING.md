@@ -34,6 +34,7 @@ python3 "$HOME/.agents/skills/skill-creator/scripts/quick_validate.py" .
 
 ## Results
 
+- Foundation 09 当前根目录完整单元测试为 114 项通过、0 项失败；三个既有审计脚本烟测分别保持预期退出码 `2`、`2`、`0`，六个产品与合成夹具 JSON、两个 rc.3 前向 JSON、Skill 结构、Markdown 链接、版本和跟踪文件脱敏检查均通过。
 - Foundation 09 新增 14 项项目上下文外部行为测试，覆盖可选不落盘、确认更新、拒绝更新、待确认不更新、上游变化传播、项目隔离、本地工件声明、已确认记录完整性、版本检查、秘密和无必要个人信息扫描、敏感键名脱敏、凭据近失配以及本地处理边界。
 - 只有 `actor: user` 且状态为 `confirmed` 的请求可以写入已确认事实或关系；`rejected` 和 `pending` 均不修改工件。上游材料变化使关联事实、关系、决策、结论和追溯链进入 `pending_review`。
 - 项目上下文包固定为单一 `project_id` 的本地 JSON 工件，不自动调用外部网络、上传服务或外部数据库。合成夹具继续标记为 `deterministic-synthetic-fixture`，不包含真实项目事实，也不构成模型运行证据。
