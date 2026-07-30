@@ -95,13 +95,23 @@ cp -R yangqi-tech-writing/references yangqi-tech-writing/scripts "$CODEX_HOME/sk
 
 完整执行规则见 [SKILL.md](SKILL.md)，场景边界见 [references/scene-packs](references/scene-packs)。
 
+## 感知决策接缝
+
+`scripts/perception_decision.py` 接收“用户任务＋材料标准化视图”的 JSON 请求，输出统一的业务域、生命周期位置、文种场景、材料子类型、任务模式、支持级别、处理模式、加载合同、待确认项和阻断项。当前未发布变更仅建立初步设计审阅的最小兼容切片和信息不足时的保守降级，不替换七类场景链，也不表示初步设计已经获得深度支持。
+
+材料标准化视图必须保留 `source_id`、材料状态和至少一个原文定位，并明确标记 `is_formal_material: false`。它是专业文档工具生成的派生输入，不是新的正式材料。输入不足时，决策保留 `unknown`、`unclear` 及带依据的候选分类。
+
+```bash
+python3 scripts/perception_decision.py request.json
+```
+
 ## 目录结构
 
 ```text
 yangqi-tech-writing/
 ├── SKILL.md                 # 运行入口与场景路由
 ├── references/              # 共性规则和七类场景包
-├── scripts/                 # 三个确定性审计脚本
+├── scripts/                 # 感知决策接缝与三个确定性审计脚本
 ├── tests/                   # 单元测试与烟测样例
 ├── evals/evals.json         # 43 项行为评测
 ├── TESTING.md               # 验证记录和局限
@@ -112,7 +122,7 @@ yangqi-tech-writing/
 
 ## 审计脚本
 
-脚本只使用 Python 标准库，输出 JSON。
+三个既有审计脚本只使用 Python 标准库，输出 JSON，入口和退出码保持不变。
 
 ### 保护项差异
 

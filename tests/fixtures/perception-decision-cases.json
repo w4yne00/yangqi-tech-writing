@@ -1,0 +1,61 @@
+{
+  "schema_version": "1.0",
+  "evidence_type": "deterministic-synthetic-fixture",
+  "model_execution": false,
+  "statement": "仅验证确定性决策合同和测试数据一致性，不代表真实模型运行通过率。",
+  "cases": [
+    {
+      "case_id": "FOUNDATION-01-EXPLICIT-PRELIMINARY-DESIGN-REVIEW",
+      "request": {
+        "task": {
+          "instruction": "审阅这份初步设计说明书的网络架构章节，只标出问题。",
+          "mode": "review",
+          "scope": "local"
+        },
+        "material_view": {
+          "schema_version": "1.0",
+          "view_type": "material_normalized_view",
+          "source_id": "SYNTHETIC-SOURCE-001",
+          "material_status": "draft",
+          "title": "某项目初步设计说明书",
+          "is_formal_material": false,
+          "segments": [
+            {
+              "text": "本章说明网络分区和安全域边界。",
+              "locator": {
+                "section": "5.2",
+                "page": 17
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case_id": "FOUNDATION-01-UNCLEAR-DESIGN-REVIEW",
+      "request": {
+        "task": {
+          "instruction": "审阅这份设计材料，只标出问题。",
+          "mode": "review",
+          "scope": "local"
+        },
+        "material_view": {
+          "schema_version": "1.0",
+          "view_type": "material_normalized_view",
+          "source_id": "SYNTHETIC-SOURCE-002",
+          "material_status": "unknown",
+          "title": "设计说明",
+          "is_formal_material": false,
+          "segments": [
+            {
+              "text": "本节说明总体方案。",
+              "locator": {
+                "section": "1"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
