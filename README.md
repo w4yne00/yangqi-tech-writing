@@ -108,13 +108,26 @@ cp -R yangqi-tech-writing/references yangqi-tech-writing/scripts "$CODEX_HOME/sk
 python3 scripts/perception_decision.py request.json
 ```
 
+## 项目上下文包
+
+持续性工程或课题可以选择维护项目隔离的本地 JSON 上下文包，用于保存材料元数据、已确认关系、范围、术语、已确认事实、假设、决策、冲突和追溯链。单次任务不需要上下文包；省略 `--context` 时不会落盘。
+
+只有请求明确提供 `confirmation.status: confirmed` 和 `confirmation.actor: user` 时才写入。`rejected` 或 `pending` 保持本地文件不变；同一上游材料发生版本或内容变化时，关联结论、决策、关系和追溯链进入 `pending_review`。已有上下文包的 `project_id` 与请求不一致时阻断，项目受限信息不会自动跨项目合并或复用。
+
+写盘前会拒绝常见密钥、口令、令牌、真实账号和无必要个人信息，错误结果不回显原值。该入口只使用 Python 标准库和用户指定的本地 JSON 文件，不自动调用外部网络、上传服务或外部数据库。完整合同见 [项目上下文包](references/project-context.md)。
+
+```bash
+python3 scripts/project_context.py request.json
+python3 scripts/project_context.py request.json --context project-context.json
+```
+
 ## 目录结构
 
 ```text
 yangqi-tech-writing/
 ├── SKILL.md                 # 运行入口与场景路由
 ├── references/              # 共性规则和七类场景包
-├── scripts/                 # 感知决策接缝与三个确定性审计脚本
+├── scripts/                 # 感知决策、项目上下文与三个确定性审计脚本
 ├── tests/                   # 单元测试与烟测样例
 ├── evals/evals.json         # 43 项行为评测
 ├── TESTING.md               # 验证记录和局限

@@ -1,0 +1,139 @@
+{
+  "schema_version": "1.0",
+  "evidence_type": "deterministic-synthetic-fixture",
+  "model_execution": false,
+  "statement": "仅验证本地项目上下文包的数据合同和外部行为，不代表真实项目材料或模型运行通过率。",
+  "confirmed_update": {
+    "schema_version": "1.0",
+    "project_id": "SYNTHETIC-PROJECT-A",
+    "confirmation": {
+      "status": "confirmed",
+      "actor": "user"
+    },
+    "update": {
+      "materials": [
+        {
+          "material_id": "MAT-UPSTREAM",
+          "title": "已批准范围材料",
+          "version": "1.0",
+          "material_subtype": "approval",
+          "status": "approved"
+        },
+        {
+          "material_id": "MAT-DOWNSTREAM",
+          "title": "设计材料",
+          "version": "1.0",
+          "material_subtype": "preliminary_design",
+          "status": "draft"
+        }
+      ],
+      "relationships": [
+        {
+          "relation_id": "REL-GOVERNS",
+          "from_material_id": "MAT-UPSTREAM",
+          "to_material_id": "MAT-DOWNSTREAM",
+          "relation_type": "governs",
+          "basis": "用户确认已批准范围材料控制设计范围"
+        }
+      ],
+      "scope": [
+        {
+          "scope_id": "SCOPE-001",
+          "text": "本次仅覆盖合成测试范围",
+          "source_material_ids": [
+            "MAT-UPSTREAM"
+          ]
+        }
+      ],
+      "terms": [
+        {
+          "term_id": "TERM-001",
+          "term": "控制性材料",
+          "definition": "经用户确认对当前事项具有控制作用的材料",
+          "source_material_ids": [
+            "MAT-UPSTREAM"
+          ]
+        }
+      ],
+      "facts": [
+        {
+          "fact_id": "FACT-001",
+          "text": "批准范围仅包含合成测试对象",
+          "source_material_ids": [
+            "MAT-UPSTREAM"
+          ]
+        }
+      ],
+      "assumptions": [
+        {
+          "assumption_id": "ASSUMPTION-001",
+          "text": "假设后续未发生正式范围变更",
+          "source_material_ids": [
+            "MAT-UPSTREAM"
+          ]
+        }
+      ],
+      "decisions": [
+        {
+          "decision_id": "DECISION-001",
+          "text": "设计范围暂按已批准材料控制",
+          "source_material_ids": [
+            "MAT-UPSTREAM"
+          ]
+        }
+      ],
+      "conclusions": [
+        {
+          "conclusion_id": "CONCLUSION-001",
+          "text": "当前设计范围与批准范围一致",
+          "source_material_ids": [
+            "MAT-UPSTREAM",
+            "MAT-DOWNSTREAM"
+          ]
+        }
+      ],
+      "conflicts": [
+        {
+          "conflict_id": "CONFLICT-001",
+          "text": "未发现正式范围冲突",
+          "source_material_ids": [
+            "MAT-UPSTREAM",
+            "MAT-DOWNSTREAM"
+          ]
+        }
+      ],
+      "trace_links": [
+        {
+          "trace_id": "TRACE-001",
+          "from_ref": "FACT-001",
+          "to_ref": "CONCLUSION-001",
+          "relation_type": "supports",
+          "source_material_ids": [
+            "MAT-UPSTREAM",
+            "MAT-DOWNSTREAM"
+          ]
+        }
+      ]
+    }
+  },
+  "upstream_change": {
+    "schema_version": "1.0",
+    "project_id": "SYNTHETIC-PROJECT-A",
+    "expected_revision": 1,
+    "confirmation": {
+      "status": "confirmed",
+      "actor": "user"
+    },
+    "update": {
+      "materials": [
+        {
+          "material_id": "MAT-UPSTREAM",
+          "title": "已批准范围材料",
+          "version": "2.0",
+          "material_subtype": "approval",
+          "status": "approved"
+        }
+      ]
+    }
+  }
+}

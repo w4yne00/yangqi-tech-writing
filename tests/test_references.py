@@ -6,6 +6,29 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class ReferenceContractTests(unittest.TestCase):
+    def test_project_context_requires_confirmation_isolation_and_secret_rejection(self):
+        text = (ROOT / "references/project-context.md").read_text(
+            encoding="utf-8"
+        )
+        for phrase in [
+            "可选本地工件",
+            "`actor: user`",
+            "`confirmed`",
+            "`rejected`",
+            "`pending`",
+            "`pending_review`",
+            "项目隔离",
+            "不得自动合并",
+            "密钥",
+            "口令",
+            "令牌",
+            "真实账号",
+            "无必要个人信息",
+            "不自动调用外部网络",
+            "外部数据库",
+        ]:
+            self.assertIn(phrase, text)
+
     def test_material_set_review_requires_explicit_relations_and_blocks_conflicts(self):
         text = (ROOT / "references/material-set-review.md").read_text(
             encoding="utf-8"

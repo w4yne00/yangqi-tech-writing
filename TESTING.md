@@ -19,6 +19,7 @@ python3 scripts/protected_diff.py tests/fixtures/before.md tests/fixtures/after.
 python3 scripts/evidence_check.py tests/fixtures/evidence-ledger.json
 python3 scripts/style_audit.py tests/fixtures/sample.md
 python3 -m unittest tests.test_perception_decision -v
+python3 -m unittest tests.test_project_context -v
 python3 -m json.tool evals/evals.json
 python3 -m json.tool evals/trigger-evals.json
 python3 -m json.tool evals/trigger-results.json
@@ -33,6 +34,9 @@ python3 "$HOME/.agents/skills/skill-creator/scripts/quick_validate.py" .
 
 ## Results
 
+- Foundation 09 新增 8 项项目上下文外部行为测试，覆盖可选不落盘、确认更新、拒绝更新、待确认不更新、上游变化传播、项目隔离、版本检查、秘密和无必要个人信息扫描以及本地处理边界。
+- 只有 `actor: user` 且状态为 `confirmed` 的请求可以写入已确认事实或关系；`rejected` 和 `pending` 均不修改工件。上游材料变化使关联事实、关系、决策、结论和追溯链进入 `pending_review`。
+- 项目上下文包固定为单一 `project_id` 的本地 JSON 工件，不自动调用外部网络、上传服务或外部数据库。合成夹具继续标记为 `deterministic-synthetic-fixture`，不包含真实项目事实，也不构成模型运行证据。
 - Foundation 08 当前根目录完整单元测试为 99 项通过、0 项失败；三个既有审计脚本烟测、四个产品 JSON 解析和 Skill 结构校验继续符合原合同。
 - Foundation 08 在既有最高层感知决策接缝增加可选 `material_set`：4 组确定性合成材料集案例和 10 项外部行为测试覆盖七类关系、日期近失配、批准/签署/用户指定控制依据、七类冲突、逐项冲突关联、关系覆盖、上游缺失、单材料降级及非法状态/关系/冲突维度。
 - 文件日期较新不会自动形成 `supersedes`；材料集只有在显式关系下确定控制和替代线索。范围、数量、参数、责任、时间、结论和陈述效力冲突只输出差异、影响和待确认项，并阻断自动定稿。
