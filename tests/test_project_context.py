@@ -128,14 +128,35 @@ class ProjectContextTests(unittest.TestCase):
             self.assertEqual(0, initial.returncode, initial.stderr)
 
             changed = self.run_request(
-                deepcopy(self.fixture["upstream_change"]),
+                {
+                    **deepcopy(self.fixture["upstream_change"]),
+                    "update": {
+                        "materials": [
+                            *deepcopy(
+                                self.fixture["upstream_change"]["update"][
+                                    "materials"
+                                ]
+                            ),
+                            {
+                                "material_id": "MAT-DOWNSTREAM",
+                                "title": "设计材料",
+                                "version": "2.0",
+                                "material_subtype": "preliminary_design",
+                                "status": "draft",
+                            },
+                        ]
+                    },
+                },
                 context_path,
             )
 
             self.assertEqual(0, changed.returncode, changed.stderr)
             result = json.loads(changed.stdout)
             invalidated = result["persistence"]["invalidated"]
-            self.assertEqual(["MAT-UPSTREAM"], invalidated["material_ids"])
+            self.assertEqual(
+                ["MAT-DOWNSTREAM", "MAT-UPSTREAM"],
+                invalidated["material_ids"],
+            )
             self.assertEqual(
                 ["CONCLUSION-001"], invalidated["conclusion_ids"]
             )
@@ -147,17 +168,24 @@ class ProjectContextTests(unittest.TestCase):
 
             context = self.load_context(context_path)
             self.assertEqual(2, context["revision"])
-            for key in (
+            upstream_only = (
                 "confirmed_facts",
-                "confirmed_relationships",
                 "decisions",
                 "conclusions",
-                "conflicts",
                 "trace_links",
-            ):
+            )
+            for key in upstream_only:
                 self.assertEqual("pending_review", context[key][0]["review_status"])
                 self.assertEqual(
                     ["MAT-UPSTREAM"],
+                    context[key][0]["stale_due_to_material_ids"],
+                )
+            for key in ("confirmed_relationships", "conflicts"):
+                self.assertEqual(
+                    "pending_review", context[key][0]["review_status"]
+                )
+                self.assertEqual(
+                    ["MAT-DOWNSTREAM", "MAT-UPSTREAM"],
                     context[key][0]["stale_due_to_material_ids"],
                 )
 
@@ -223,6 +251,42 @@ class ProjectContextTests(unittest.TestCase):
                         tampered, context_path.read_text(encoding="utf-8")
                     )
 
+    def test_existing_package_rejects_unconfirmed_facts_and_relationships(self):
+        tampered_records = (
+            ("confirmed_facts", "FACT-001"),
+            ("confirmed_relationships", "REL-GOVERNS"),
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            for index, (collection, record_id) in enumerate(tampered_records):
+                with self.subTest(collection=collection):
+                    context_path = (
+                        Path(directory) / "confirmation-{}.json".format(index)
+                    )
+                    initial = self.run_request(
+                        deepcopy(self.fixture["confirmed_update"]),
+                        context_path,
+                    )
+                    self.assertEqual(0, initial.returncode, initial.stderr)
+                    context = self.load_context(context_path)
+                    context[collection][0]["confirmation_status"] = "pending"
+                    tampered = json.dumps(
+                        context, ensure_ascii=False, indent=2
+                    ) + "\n"
+                    context_path.write_text(tampered, encoding="utf-8")
+
+                    completed = self.run_request(
+                        deepcopy(self.fixture["upstream_change"]),
+                        context_path,
+                    )
+
+                    self.assertEqual(1, completed.returncode)
+                    error = json.loads(completed.stderr)
+                    self.assertEqual("invalid_request", error["error"])
+                    self.assertIn(record_id, error["message"])
+                    self.assertEqual(
+                        tampered, context_path.read_text(encoding="utf-8")
+                    )
+
     def test_revision_mismatch_rejects_update_without_mutation(self):
         with tempfile.TemporaryDirectory() as directory:
             context_path = Path(directory) / "project-context.json"
@@ -270,6 +334,19 @@ class ProjectContextTests(unittest.TestCase):
                     self.assertNotIn(value, completed.stderr)
                     self.assertNotIn(value, completed.stdout)
                     self.assertFalse(context_path.exists())
+
+    def test_ordinary_key_substring_is_not_treated_as_a_credential(self):
+        with tempfile.TemporaryDirectory() as directory:
+            context_path = Path(directory) / "project-context.json"
+            request = deepcopy(self.fixture["confirmed_update"])
+            request["update"]["facts"][0]["text"] = (
+                "The monkey is suitable for this synthetic example."
+            )
+
+            completed = self.run_request(request, context_path)
+
+            self.assertEqual(0, completed.returncode, completed.stderr)
+            self.assertTrue(context_path.is_file())
 
     def test_unknown_fields_and_non_user_confirmation_are_rejected(self):
         invalid_requests = []

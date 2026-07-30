@@ -148,8 +148,9 @@ SENSITIVE_VALUES = (
     re.compile(r"(?<!\d)\d{17}[\dXx](?!\d)"),
     re.compile(r"(?:真实)?(?:账号|用户名)\s*(?:为|是|[:：=])\s*\S+"),
     re.compile(
-        r"(?:(?:access|api)[ _-]?)?"
-        r"(?:password|passwd|passphrase|secret|token|key)"
+        r"\b(?:password|passwd|passphrase|secret|token)\b"
+        r"\s*(?:is|[:=：])\s*\S+|"
+        r"\b(?:access|api)[ _-]+key\b"
         r"\s*(?:is|[:=：])\s*\S+|"
         r"(?:访问)?(?:口令|密码|密钥|令牌)"
         r"\s*(?:为|是|[:=：])\s*\S+",
@@ -417,6 +418,20 @@ def validate_package(package):
             raise ContextError(
                 "project_context.{} 必须是数组".format(collection)
             )
+    for collection, id_field in (
+        ("confirmed_facts", "fact_id"),
+        ("confirmed_relationships", "relation_id"),
+    ):
+        for index, raw_record in enumerate(package[collection]):
+            field = "project_context.{}[{}]".format(collection, index)
+            record = require_mapping(raw_record, field)
+            record_id = require_text(record, id_field, field)
+            if record.get("confirmation_status") != "confirmed":
+                raise ContextError(
+                    "{} 的 confirmation_status 必须为 confirmed: {}".format(
+                        field, record_id
+                    )
+                )
     sensitive_paths = find_sensitive_paths(package)
     if sensitive_paths:
         raise ContextError(
@@ -490,7 +505,7 @@ def mark_stale(package, changed_material_ids):
         ("conflicts", "conflict_id", "conflict_ids"),
     )
     invalidated = {"material_ids": sorted(changed_material_ids)}
-    stale_refs = set()
+    stale_materials_by_ref = {}
     record_by_ref = {}
     result_field_by_ref = {}
     for collection, id_field, result_field in direct_targets:
@@ -499,48 +514,71 @@ def mark_stale(package, changed_material_ids):
             record_id = item[id_field]
             record_by_ref[record_id] = item
             result_field_by_ref[record_id] = result_field
-            stale_ids = sorted(
+            stale_material_ids = (
                 material_dependencies(item, collection)
                 & changed_material_ids
             )
-            if not stale_ids:
+            if not stale_material_ids:
                 continue
-            set_pending_review(item, stale_ids)
+            set_pending_review(item, stale_material_ids)
             invalidated[result_field].append(record_id)
-            stale_refs.add(record_id)
+            stale_materials_by_ref[record_id] = set(stale_material_ids)
         invalidated[result_field].sort()
 
     invalidated["trace_ids"] = []
+    trace_stale_materials = {}
     changed = True
     while changed:
         changed = False
         for trace in package["trace_links"]:
             trace_id = trace["trace_id"]
-            direct_stale = bool(
+            direct_stale_materials = (
                 material_dependencies(trace, "trace_links")
                 & changed_material_ids
             )
-            from_stale = trace["from_ref"] in stale_refs
-            to_stale = trace["to_ref"] in stale_refs
-            trace_stale = direct_stale or from_stale or to_stale
-            if (
-                trace_stale
-                and trace_id not in invalidated["trace_ids"]
-            ):
-                set_pending_review(trace, changed_material_ids)
-                invalidated["trace_ids"].append(trace_id)
+            from_stale_materials = stale_materials_by_ref.get(
+                trace["from_ref"], set()
+            )
+            to_stale_materials = stale_materials_by_ref.get(
+                trace["to_ref"], set()
+            )
+            trace_materials = (
+                direct_stale_materials
+                | from_stale_materials
+                | to_stale_materials
+            )
+            previous_trace_materials = trace_stale_materials.get(
+                trace_id, set()
+            )
+            if trace_materials - previous_trace_materials:
+                set_pending_review(trace, trace_materials)
+                trace_stale_materials[trace_id] = set(trace_materials)
+                if trace_id not in invalidated["trace_ids"]:
+                    invalidated["trace_ids"].append(trace_id)
                 changed = True
 
-            if not (direct_stale or from_stale):
+            propagated_materials = (
+                direct_stale_materials | from_stale_materials
+            )
+            if not propagated_materials:
                 continue
             target_ref = trace["to_ref"]
             target = record_by_ref.get(target_ref)
             result_field = result_field_by_ref.get(target_ref)
-            if target is None or target_ref in stale_refs:
+            if target is None:
                 continue
-            set_pending_review(target, changed_material_ids)
-            invalidated[result_field].append(target_ref)
-            stale_refs.add(target_ref)
+            previous_target_materials = stale_materials_by_ref.get(
+                target_ref, set()
+            )
+            updated_target_materials = (
+                previous_target_materials | propagated_materials
+            )
+            if updated_target_materials == previous_target_materials:
+                continue
+            set_pending_review(target, updated_target_materials)
+            if target_ref not in invalidated[result_field]:
+                invalidated[result_field].append(target_ref)
+            stale_materials_by_ref[target_ref] = updated_target_materials
             changed = True
 
     for result_field in invalidated:
