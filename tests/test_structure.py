@@ -20,6 +20,7 @@ REQUIRED_FILES = [
     "references/statement-force-policy.md",
     "references/material-set-review.md",
     "references/project-context.md",
+    "references/material-contract-evidence.md",
     "references/ai-trace-patterns.md",
     "references/structural-antipatterns.md",
     "references/organization-style-contract.md",
@@ -34,6 +35,8 @@ REQUIRED_FILES = [
     "scripts/protected_diff.py",
     "scripts/evidence_check.py",
     "scripts/style_audit.py",
+    "scripts/material_contract_registry.py",
+    "templates/material-contract-evidence-bundle.json",
     "evals/evals.json",
 ]
 

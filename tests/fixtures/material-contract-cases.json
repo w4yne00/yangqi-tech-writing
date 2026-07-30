@@ -1,0 +1,191 @@
+{
+  "schema_version": "1.0",
+  "evidence_type": "deterministic-synthetic-fixture",
+  "model_execution": false,
+  "statement": "仅模拟材料合同和样本登记的外部行为，不代表真实材料证据、深度支持或模型运行表现。",
+  "valid_deep_support_bundle": {
+    "schema_version": "1.0",
+    "artifact_type": "material_contract_evidence_bundle",
+    "contract": {
+      "contract_id": "SIMULATED-PRELIMINARY-DESIGN",
+      "applicable_identity": {
+        "business_domain": "engineering_construction",
+        "lifecycle_position": "design",
+        "document_scene": "architecture_design",
+        "material_subtype": "preliminary_design"
+      },
+      "required_inputs": [
+        {
+          "input_id": "approved_scope",
+          "description": "经确认的上游范围材料",
+          "required": true
+        }
+      ],
+      "content_responsibilities": [
+        {
+          "responsibility_id": "scope_implementation",
+          "description": "说明上游范围如何落实到设计内容"
+        }
+      ],
+      "reasonable_depth": [
+        {
+          "depth_id": "system_boundary",
+          "description": "形成可追溯的系统边界，不替代详细设计参数"
+        }
+      ],
+      "statement_force": {
+        "allowed": [
+          "professional_judgment",
+          "approved_boundary"
+        ],
+        "prohibited_transitions": [
+          "professional_judgment->approved_boundary"
+        ]
+      },
+      "traceability": [
+        {
+          "trace_id": "scope_to_design",
+          "description": "上游范围到设计项的可验证联系"
+        }
+      ],
+      "common_failures": [
+        {
+          "failure_id": "missing_scope_source",
+          "description": "设计范围没有上游来源"
+        }
+      ],
+      "missing_information_handling": [
+        {
+          "missing_id": "unknown_scope",
+          "action": "阻断范围定稿并列入待确认项"
+        }
+      ],
+      "validation_case_ids": [
+        "SIM-REQ-001",
+        "SIM-POS-001",
+        "SIM-FAIL-001",
+        "SIM-BOUNDARY-001",
+        "SIM-MISSING-001"
+      ],
+      "support_level": "deep_support"
+    },
+    "samples": [
+      {
+        "sample_id": "SIM-REQ-001",
+        "source": {
+          "source_id": "SIMULATED-OFFICIAL-REQUIREMENT",
+          "source_type": "formal_requirement",
+          "locator": "模拟条款 1"
+        },
+        "authorization": {
+          "status": "public_reuse",
+          "scope": "contract_derivation"
+        },
+        "redaction_status": "not_required",
+        "material_version": "simulated-1.0",
+        "review_status": "approved",
+        "case_type": "formal_requirement",
+        "data_classification": "public",
+        "intended_uses": [
+          "generic_rule",
+          "public_eval",
+          "capability_evidence"
+        ],
+        "evidence_type": "formal-requirement",
+        "model_execution": false
+      },
+      {
+        "sample_id": "SIM-POS-001",
+        "source": {
+          "source_id": "SIMULATED-REAL-CASE-POSITIVE",
+          "source_type": "real_case",
+          "locator": "模拟材料正例"
+        },
+        "authorization": {
+          "status": "authorized",
+          "scope": "contract_derivation"
+        },
+        "redaction_status": "redacted",
+        "material_version": "simulated-1.0",
+        "review_status": "approved",
+        "case_type": "positive",
+        "data_classification": "deidentified_reusable",
+        "intended_uses": [
+          "generic_rule",
+          "capability_evidence"
+        ],
+        "evidence_type": "deidentified-real-case",
+        "model_execution": false
+      },
+      {
+        "sample_id": "SIM-FAIL-001",
+        "source": {
+          "source_id": "SIMULATED-REAL-CASE-FAILURE",
+          "source_type": "real_case",
+          "locator": "模拟退回案例"
+        },
+        "authorization": {
+          "status": "authorized",
+          "scope": "contract_derivation"
+        },
+        "redaction_status": "redacted",
+        "material_version": "simulated-1.0",
+        "review_status": "approved",
+        "case_type": "failure",
+        "data_classification": "deidentified_reusable",
+        "intended_uses": [
+          "generic_rule",
+          "capability_evidence"
+        ],
+        "evidence_type": "deidentified-real-case",
+        "model_execution": false
+      },
+      {
+        "sample_id": "SIM-BOUNDARY-001",
+        "source": {
+          "source_id": "SIMULATED-REAL-CASE-BOUNDARY",
+          "source_type": "real_case",
+          "locator": "模拟生命周期边界案例"
+        },
+        "authorization": {
+          "status": "authorized",
+          "scope": "contract_derivation"
+        },
+        "redaction_status": "redacted",
+        "material_version": "simulated-1.0",
+        "review_status": "approved",
+        "case_type": "lifecycle_boundary",
+        "data_classification": "deidentified_reusable",
+        "intended_uses": [
+          "generic_rule",
+          "capability_evidence"
+        ],
+        "evidence_type": "deidentified-real-case",
+        "model_execution": false
+      },
+      {
+        "sample_id": "SIM-MISSING-001",
+        "source": {
+          "source_id": "SIMULATED-REAL-CASE-MISSING",
+          "source_type": "real_case",
+          "locator": "模拟缺失信息案例"
+        },
+        "authorization": {
+          "status": "authorized",
+          "scope": "contract_derivation"
+        },
+        "redaction_status": "redacted",
+        "material_version": "simulated-1.0",
+        "review_status": "approved",
+        "case_type": "missing_information",
+        "data_classification": "deidentified_reusable",
+        "intended_uses": [
+          "generic_rule",
+          "capability_evidence"
+        ],
+        "evidence_type": "deidentified-real-case",
+        "model_execution": false
+      }
+    ]
+  }
+}

@@ -6,6 +6,36 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class ReferenceContractTests(unittest.TestCase):
+    def test_material_contract_registry_defines_evidence_and_privacy_gates(self):
+        text = (ROOT / "references/material-contract-evidence.md").read_text(
+            encoding="utf-8"
+        )
+        for phrase in [
+            "适用的业务域、生命周期位置、文种场景和材料子类型",
+            "`required_inputs`",
+            "`content_responsibilities`",
+            "`reasonable_depth`",
+            "`statement_force`",
+            "`traceability`",
+            "`common_failures`",
+            "`missing_information_handling`",
+            "`validation_case_ids`",
+            "`support_level`",
+            "`authorization`",
+            "`redaction_status`",
+            "`material_version`",
+            "`review_status`",
+            "`case_type`",
+            "`evidence_type`",
+            "`model_execution`",
+            "`project_restricted`",
+            "`prohibited_persistence`",
+            "`deep_support`",
+            "`joint_review_support`",
+            "不计入正式要求或真实案例数量",
+        ]:
+            self.assertIn(phrase, text)
+
     def test_project_context_requires_confirmation_isolation_and_secret_rejection(self):
         text = (ROOT / "references/project-context.md").read_text(
             encoding="utf-8"

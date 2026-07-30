@@ -1,0 +1,86 @@
+{
+  "schema_version": "1.0",
+  "artifact_type": "material_contract_evidence_bundle",
+  "contract": {
+    "contract_id": "REPLACE-CONTRACT-ID",
+    "applicable_identity": {
+      "business_domain": "REPLACE-BUSINESS-DOMAIN",
+      "lifecycle_position": "REPLACE-LIFECYCLE-POSITION",
+      "document_scene": "REPLACE-DOCUMENT-SCENE",
+      "material_subtype": "REPLACE-MATERIAL-SUBTYPE"
+    },
+    "required_inputs": [
+      {
+        "input_id": "REPLACE-INPUT-ID",
+        "description": "说明形成该材料所需的正式输入及其状态要求",
+        "required": true
+      }
+    ],
+    "content_responsibilities": [
+      {
+        "responsibility_id": "REPLACE-RESPONSIBILITY-ID",
+        "description": "说明本材料必须承担的内容责任"
+      }
+    ],
+    "reasonable_depth": [
+      {
+        "depth_id": "REPLACE-DEPTH-ID",
+        "description": "说明本生命周期位置的合理内容深度及上下游边界"
+      }
+    ],
+    "statement_force": {
+      "allowed": [
+        "professional_judgment"
+      ],
+      "prohibited_transitions": [
+        "professional_judgment->approved_boundary"
+      ]
+    },
+    "traceability": [
+      {
+        "trace_id": "REPLACE-TRACE-ID",
+        "description": "说明要求、设计、承诺、实施或证据之间的追溯关系"
+      }
+    ],
+    "common_failures": [
+      {
+        "failure_id": "REPLACE-FAILURE-ID",
+        "description": "记录真实退回或审查失败模式，不推演行业规则"
+      }
+    ],
+    "missing_information_handling": [
+      {
+        "missing_id": "REPLACE-MISSING-ID",
+        "action": "说明缺失信息触发的占位、待确认、降级或阻断动作"
+      }
+    ],
+    "validation_case_ids": [
+      "REPLACE-SAMPLE-ID"
+    ],
+    "support_level": "basic_support"
+  },
+  "samples": [
+    {
+      "sample_id": "REPLACE-SAMPLE-ID",
+      "source": {
+        "source_id": "REPLACE-SOURCE-ID",
+        "source_type": "synthetic_case",
+        "locator": "REPLACE-SOURCE-LOCATOR"
+      },
+      "authorization": {
+        "status": "authorized",
+        "scope": "private_validation"
+      },
+      "redaction_status": "not_required",
+      "material_version": "REPLACE-MATERIAL-VERSION",
+      "review_status": "pending",
+      "case_type": "missing_information",
+      "data_classification": "deidentified_reusable",
+      "intended_uses": [
+        "private_review"
+      ],
+      "evidence_type": "deterministic-synthetic-fixture",
+      "model_execution": false
+    }
+  ]
+}

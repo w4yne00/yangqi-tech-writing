@@ -103,6 +103,12 @@ description: G 企网络安全与信息化技术材料的起草、审阅和保�
 
 持久化前拒绝密钥、口令、令牌、真实账号和无必要个人信息，错误信息不回显原值。上下文处理不自动调用外部网络、上传服务、外部数据库或组织级 Style Profile。
 
+### 材料合同与样本登记
+
+Skill 维护者需要形成或调整材料专用合同时，使用[材料合同与样本证据登记](references/material-contract-evidence.md)及仓库模板。登记包记录适用身份、所需输入、内容责任、合理深度、陈述效力、追溯关系、常见失败、缺失信息处理、验证案例和支持级别，并为每个样本记录来源、授权、脱敏状态、材料版本、评审状态、案例类型、`evidence_type` 和 `model_execution`。
+
+该入口只用于维护证据元数据，不在普通写作任务中自动运行或持久化材料正文。项目受限样本只能用于私有审阅，禁止持久化信息直接阻断；合成案例不计入真实证据。缺少正式要求和所需真实案例时，不得声明 `deep_support` 或 `joint_review_support`。
+
 ## 风格问题 Tier
 
 详细模式和例外见[AI 痕迹模式](references/ai-trace-patterns.md)及[结构反模式](references/structural-antipatterns.md)。Tier 是问题确定性，不是改写力度。
@@ -176,6 +182,12 @@ python3 scripts/perception_decision.py request.json
 ```bash
 python3 scripts/project_context.py request.json
 python3 scripts/project_context.py request.json --context project-context.json
+```
+
+材料合同和样本元数据使用维护者专用校验入口：
+
+```bash
+python3 scripts/material_contract_registry.py material-contract-evidence-bundle.json
 ```
 
 三个既有审计脚本及其接口保持不变：

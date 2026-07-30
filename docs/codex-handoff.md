@@ -25,6 +25,14 @@ Run the complete unittest suite, three CLI smoke tests, product and forward JSON
 
 The 8-case comparison is a deterministic static fixture with 16 assertions. The rc.3 forward retest used three fresh-context single runs and passed 9/9 frozen assertions plus human review. Neither result proves statistical stability.
 
+## Foundation 11 scope
+
+Issue #12 adds a maintainer-facing material-contract and sample-evidence registry. The distributed template records applicable identity, required inputs, content responsibilities, reasonable depth, statement force, traceability, common failures, missing-information handling, validation cases and support level. Sample metadata records source, authorization, redaction, material version, review status, case type, data classification, intended uses, `evidence_type` and `model_execution`.
+
+Project-restricted samples are limited to private review. Prohibited-persistence data is rejected. Synthetic cases never count as formal requirements or real cases. Deep, joint-review and forward-validation claims are blocked unless their declared evidence gate is complete. The template itself remains at `basic_support` and does not claim a deep material contract.
+
+Foundation 11 verification on 2026-07-30 passed 131 root unit tests, including 16 material-contract registry behavior tests.
+
 ## Release status
 
 The FWD-01, unfinished-without-baseline and explicit-overdue forward cases passed, and the clean outputs copy passed independent verification. The candidate was released as stable v1.1.0 after 66 local tests passed.
@@ -40,4 +48,5 @@ The user authorized stable integration, local Skill replacement, commit and GitH
 - 真实前向复测中，FWD-01、无计划基线和明确逾期 3 个全新上下文案例已通过 9/9 条冻结断言及人工审稿；原始输出和评分已保留。
 - rc.3 已集成为稳定版 v1.1.0；根目录与安装副本的发布验证均以 66 项测试为准。
 - 前向案例每项只运行 1 次，不得包装为统计稳定性证明。
+- Foundation 11 已建立材料合同与脱敏样本登记入口；合成夹具不作为深度或联审能力证据，根目录回归为 131 项。
 - 本次已授权提交、推送和覆盖安装；GitHub Release 仍需单独授权。

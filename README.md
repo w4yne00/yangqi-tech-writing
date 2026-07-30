@@ -121,13 +121,24 @@ python3 scripts/project_context.py request.json
 python3 scripts/project_context.py request.json --context project-context.json
 ```
 
+## 材料合同与样本证据
+
+Skill 维护者可从 [`templates/material-contract-evidence-bundle.json`](templates/material-contract-evidence-bundle.json) 复制材料合同登记包。合同统一记录适用身份、所需输入、内容责任、合理深度、陈述效力、追溯关系、常见失败、缺失信息处理、验证案例和支持级别；样本入口记录来源、授权、脱敏状态、材料版本、评审状态、案例类型、数据分类、用途、`evidence_type` 和 `model_execution`。
+
+```bash
+python3 scripts/material_contract_registry.py material-contract-evidence-bundle.json
+```
+
+项目受限样本只能登记为私有审阅，不能进入通用规则、公开评测或能力证据；禁止持久化信息直接阻断。合成案例不会被计为正式要求或真实案例。只有正式要求及所需的脱敏真实正例、失败例、生命周期边界和缺失信息案例全部到位，才能声明 `deep_support`；`joint_review_support` 还需追溯缺失、版本冲突、陈述效力不清和明确替代案例。完整规则见[材料合同与样本证据登记](references/material-contract-evidence.md)。
+
 ## 目录结构
 
 ```text
 yangqi-tech-writing/
 ├── SKILL.md                 # 运行入口与场景路由
 ├── references/              # 共性规则和七类场景包
-├── scripts/                 # 感知决策、项目上下文与三个确定性审计脚本
+├── templates/               # 材料合同与样本登记模板
+├── scripts/                 # 感知决策、上下文、合同登记与审计脚本
 ├── tests/                   # 单元测试与烟测样例
 ├── evals/evals.json         # 43 项行为评测
 ├── TESTING.md               # 验证记录和局限
