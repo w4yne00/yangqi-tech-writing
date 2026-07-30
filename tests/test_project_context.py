@@ -251,10 +251,18 @@ class ProjectContextTests(unittest.TestCase):
                         tampered, context_path.read_text(encoding="utf-8")
                     )
 
-    def test_existing_package_rejects_unconfirmed_facts_and_relationships(self):
+    def test_existing_package_rejects_unconfirmed_records(self):
         tampered_records = (
+            ("materials", "MAT-UPSTREAM"),
             ("confirmed_facts", "FACT-001"),
             ("confirmed_relationships", "REL-GOVERNS"),
+            ("scope", "SCOPE-001"),
+            ("terms", "TERM-001"),
+            ("assumptions", "ASSUMPTION-001"),
+            ("decisions", "DECISION-001"),
+            ("conclusions", "CONCLUSION-001"),
+            ("conflicts", "CONFLICT-001"),
+            ("trace_links", "TRACE-001"),
         )
         with tempfile.TemporaryDirectory() as directory:
             for index, (collection, record_id) in enumerate(tampered_records):
@@ -282,10 +290,41 @@ class ProjectContextTests(unittest.TestCase):
                     self.assertEqual(1, completed.returncode)
                     error = json.loads(completed.stderr)
                     self.assertEqual("invalid_request", error["error"])
-                    self.assertIn(record_id, error["message"])
+                    self.assertIn(collection, error["message"])
+                    self.assertNotIn(record_id, error["message"])
                     self.assertEqual(
                         tampered, context_path.read_text(encoding="utf-8")
                     )
+
+    def test_existing_package_secret_id_is_not_repeated_in_error_output(self):
+        with tempfile.TemporaryDirectory() as directory:
+            context_path = Path(directory) / "project-context.json"
+            initial = self.run_request(
+                deepcopy(self.fixture["confirmed_update"]),
+                context_path,
+            )
+            self.assertEqual(0, initial.returncode, initial.stderr)
+            secret_value = "ghp_" + "9" * 32
+            context = self.load_context(context_path)
+            context["confirmed_facts"][0]["fact_id"] = secret_value
+            context["confirmed_facts"][0]["confirmation_status"] = "pending"
+            context_path.write_text(
+                json.dumps(context, ensure_ascii=False, indent=2) + "\n",
+                encoding="utf-8",
+            )
+
+            completed = self.run_request(
+                deepcopy(self.fixture["upstream_change"]),
+                context_path,
+            )
+
+            self.assertEqual(1, completed.returncode)
+            error = json.loads(completed.stderr)
+            self.assertEqual(
+                "persistence_rejected_sensitive_data", error["error"]
+            )
+            self.assertNotIn(secret_value, completed.stderr)
+            self.assertNotIn(secret_value, completed.stdout)
 
     def test_revision_mismatch_rejects_update_without_mutation(self):
         with tempfile.TemporaryDirectory() as directory:

@@ -112,6 +112,18 @@ COLLECTION_TARGETS = {
     "trace_links": "trace_links",
 }
 PACKAGE_COLLECTIONS = tuple(COLLECTION_TARGETS.values())
+PACKAGE_ID_FIELDS = {
+    "materials": "material_id",
+    "confirmed_relationships": "relation_id",
+    "scope": "scope_id",
+    "terms": "term_id",
+    "confirmed_facts": "fact_id",
+    "assumptions": "assumption_id",
+    "decisions": "decision_id",
+    "conclusions": "conclusion_id",
+    "conflicts": "conflict_id",
+    "trace_links": "trace_id",
+}
 
 MATERIAL_STATUSES = {
     "draft",
@@ -418,20 +430,6 @@ def validate_package(package):
             raise ContextError(
                 "project_context.{} 必须是数组".format(collection)
             )
-    for collection, id_field in (
-        ("confirmed_facts", "fact_id"),
-        ("confirmed_relationships", "relation_id"),
-    ):
-        for index, raw_record in enumerate(package[collection]):
-            field = "project_context.{}[{}]".format(collection, index)
-            record = require_mapping(raw_record, field)
-            record_id = require_text(record, id_field, field)
-            if record.get("confirmation_status") != "confirmed":
-                raise ContextError(
-                    "{} 的 confirmation_status 必须为 confirmed: {}".format(
-                        field, record_id
-                    )
-                )
     sensitive_paths = find_sensitive_paths(package)
     if sensitive_paths:
         raise ContextError(
@@ -440,6 +438,15 @@ def validate_package(package):
             ),
             "persistence_rejected_sensitive_data",
         )
+    for collection, id_field in PACKAGE_ID_FIELDS.items():
+        for index, raw_record in enumerate(package[collection]):
+            field = "project_context.{}[{}]".format(collection, index)
+            record = require_mapping(raw_record, field)
+            require_text(record, id_field, field)
+            if record.get("confirmation_status") != "confirmed":
+                raise ContextError(
+                    "{}.confirmation_status 必须为 confirmed".format(field)
+                )
     return package
 
 
