@@ -206,9 +206,21 @@ def find_sensitive_paths(value, path="$"):
     if isinstance(value, dict):
         for key, child in value.items():
             child_path = "{}.{}".format(path, key)
-            if isinstance(key, str) and SENSITIVE_FIELD.fullmatch(key):
-                findings.append(child_path)
-            findings.extend(find_sensitive_paths(child, child_path))
+            safe_child_path = child_path
+            if isinstance(key, str):
+                key_contains_sensitive_value = any(
+                    pattern.search(key) for pattern in SENSITIVE_VALUES
+                )
+                if key_contains_sensitive_value:
+                    safe_child_path = (
+                        "{}.<redacted-sensitive-key>".format(path)
+                    )
+                    findings.append(safe_child_path)
+                elif SENSITIVE_FIELD.fullmatch(key):
+                    findings.append(child_path)
+            findings.extend(
+                find_sensitive_paths(child, safe_child_path)
+            )
     elif isinstance(value, list):
         for index, child in enumerate(value):
             findings.extend(

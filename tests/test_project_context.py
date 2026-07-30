@@ -326,6 +326,38 @@ class ProjectContextTests(unittest.TestCase):
             self.assertNotIn(secret_value, completed.stderr)
             self.assertNotIn(secret_value, completed.stdout)
 
+    def test_secret_used_as_field_name_is_redacted_from_error_output(self):
+        with tempfile.TemporaryDirectory() as directory:
+            unsafe_locations = ("top_level", "fact")
+            for index, location in enumerate(unsafe_locations):
+                with self.subTest(location=location):
+                    context_path = (
+                        Path(directory) / "secret-key-{}.json".format(index)
+                    )
+                    secret_value = "ghp_" + str(index) * 32
+                    request = deepcopy(self.fixture["confirmed_update"])
+                    if location == "top_level":
+                        request[secret_value] = "synthetic"
+                    else:
+                        request["update"]["facts"][0][
+                            secret_value
+                        ] = "synthetic"
+
+                    completed = self.run_request(request, context_path)
+
+                    self.assertEqual(1, completed.returncode)
+                    error = json.loads(completed.stderr)
+                    self.assertEqual(
+                        "persistence_rejected_sensitive_data",
+                        error["error"],
+                    )
+                    self.assertIn(
+                        "<redacted-sensitive-key>", error["message"]
+                    )
+                    self.assertNotIn(secret_value, completed.stderr)
+                    self.assertNotIn(secret_value, completed.stdout)
+                    self.assertFalse(context_path.exists())
+
     def test_revision_mismatch_rejects_update_without_mutation(self):
         with tempfile.TemporaryDirectory() as directory:
             context_path = Path(directory) / "project-context.json"
