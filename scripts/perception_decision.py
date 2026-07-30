@@ -58,6 +58,32 @@ SOURCE_REQUIRED_STATEMENT_FORCES = {
     "implementation_fact",
     "acceptance_conclusion",
 }
+MATERIAL_RELATION_TYPES = {
+    "governs",
+    "derives_from",
+    "supersedes",
+    "implements",
+    "verifies",
+    "conflicts_with",
+    "unclear",
+}
+MATERIAL_CONFLICT_DIMENSIONS = {
+    "scope",
+    "quantity",
+    "parameter",
+    "responsibility",
+    "time",
+    "conclusion",
+    "statement_force",
+}
+MATERIAL_STATUSES = {
+    "draft",
+    "approved",
+    "signed",
+    "effective",
+    "superseded",
+    "unknown",
+}
 
 
 class RequestError(ValueError):
@@ -235,6 +261,334 @@ def validate_claims(raw_claims):
     return claims
 
 
+def validate_material_set(raw_material_set):
+    if raw_material_set is None:
+        return None
+    material_set = require_mapping(raw_material_set, "material_set")
+    set_id = require_text(material_set, "set_id")
+    upstream_materials_complete = material_set.get(
+        "upstream_materials_complete"
+    )
+    if not isinstance(upstream_materials_complete, bool):
+        raise RequestError(
+            "material_set.upstream_materials_complete 必须是布尔值"
+        )
+
+    raw_materials = material_set.get("materials")
+    if not isinstance(raw_materials, list) or not raw_materials:
+        raise RequestError("material_set.materials 必须至少包含一份材料")
+
+    materials = []
+    material_ids = set()
+    for index, raw_material in enumerate(raw_materials):
+        field = "material_set.materials[{}]".format(index)
+        material = require_mapping(raw_material, field)
+        material_id = require_text(material, "material_id")
+        if material_id in material_ids:
+            raise RequestError(
+                "material_set.material_id 不得重复: {}".format(material_id)
+            )
+        material_ids.add(material_id)
+        date = material.get("date")
+        if date is not None and (
+            not isinstance(date, str) or not date.strip()
+        ):
+            raise RequestError("{}.date 必须是非空字符串".format(field))
+        user_designated_control = material.get(
+            "user_designated_control", False
+        )
+        if not isinstance(user_designated_control, bool):
+            raise RequestError(
+                "{}.user_designated_control 必须是布尔值".format(field)
+            )
+        status = require_text(material, "status")
+        if status not in MATERIAL_STATUSES:
+            raise RequestError(
+                "{}.status 不是受支持的材料状态".format(field)
+            )
+        materials.append(
+            {
+                "material_id": material_id,
+                "title": require_text(material, "title"),
+                "version": require_text(material, "version"),
+                "material_subtype": require_text(
+                    material, "material_subtype"
+                ),
+                "status": status,
+                "date": date.strip() if isinstance(date, str) else None,
+                "user_designated_control": user_designated_control,
+            }
+        )
+
+    raw_relations = material_set.get("relations")
+    if not isinstance(raw_relations, list):
+        raise RequestError("material_set.relations 必须是数组")
+
+    relationships = []
+    relation_ids = set()
+    relationship_by_id = {}
+    for index, raw_relation in enumerate(raw_relations):
+        field = "material_set.relations[{}]".format(index)
+        relation = require_mapping(raw_relation, field)
+        relation_id = require_text(relation, "relation_id")
+        if relation_id in relation_ids:
+            raise RequestError(
+                "material_set.relation_id 不得重复: {}".format(relation_id)
+            )
+        relation_ids.add(relation_id)
+        from_material_id = require_text(relation, "from_material_id")
+        to_material_id = require_text(relation, "to_material_id")
+        for material_id in (from_material_id, to_material_id):
+            if material_id not in material_ids:
+                raise RequestError(
+                    "{} 引用了不存在的材料: {}".format(field, material_id)
+                )
+        relation_type = require_text(relation, "relation_type")
+        if relation_type not in MATERIAL_RELATION_TYPES:
+            raise RequestError(
+                "{}.relation_type 不是受支持的材料关系".format(field)
+            )
+        normalized_relationship = {
+            "relation_id": relation_id,
+            "from_material_id": from_material_id,
+            "to_material_id": to_material_id,
+            "relation_type": relation_type,
+            "basis": require_text(relation, "basis"),
+        }
+        relationships.append(normalized_relationship)
+        relationship_by_id[relation_id] = normalized_relationship
+
+    raw_conflicts = material_set.get("conflicts", [])
+    if not isinstance(raw_conflicts, list):
+        raise RequestError("material_set.conflicts 必须是数组")
+    conflicts = []
+    conflict_ids = set()
+    for index, raw_conflict in enumerate(raw_conflicts):
+        field = "material_set.conflicts[{}]".format(index)
+        conflict = require_mapping(raw_conflict, field)
+        conflict_id = require_text(conflict, "conflict_id")
+        if conflict_id in conflict_ids:
+            raise RequestError(
+                "material_set.conflict_id 不得重复: {}".format(conflict_id)
+            )
+        conflict_ids.add(conflict_id)
+        left_material_id = require_text(conflict, "left_material_id")
+        right_material_id = require_text(conflict, "right_material_id")
+        for material_id in (left_material_id, right_material_id):
+            if material_id not in material_ids:
+                raise RequestError(
+                    "{} 引用了不存在的材料: {}".format(field, material_id)
+                )
+        dimension = require_text(conflict, "dimension")
+        if dimension not in MATERIAL_CONFLICT_DIMENSIONS:
+            raise RequestError(
+                "{}.dimension 不是受支持的冲突维度".format(field)
+            )
+        raw_relation_id = conflict.get("relation_id")
+        relation_id = None
+        if raw_relation_id is not None:
+            relation_id = require_text(conflict, "relation_id")
+            relationship = relationship_by_id.get(relation_id)
+            if (
+                relationship is None
+                or relationship["relation_type"] != "conflicts_with"
+            ):
+                raise RequestError(
+                    "{}.relation_id 必须引用 conflicts_with 关系".format(
+                        field
+                    )
+                )
+            relationship_material_ids = {
+                relationship["from_material_id"],
+                relationship["to_material_id"],
+            }
+            if relationship_material_ids != {
+                left_material_id,
+                right_material_id,
+            }:
+                raise RequestError(
+                    "{}.relation_id 与冲突材料不一致".format(field)
+                )
+        normalized_conflict = {
+            "conflict_id": conflict_id,
+            "material_ids": [
+                left_material_id,
+                right_material_id,
+            ],
+            "dimension": dimension,
+            "difference": require_text(conflict, "difference"),
+            "impact": require_text(conflict, "impact"),
+            "pending_confirmation": require_text(
+                conflict, "pending_confirmation"
+            ),
+        }
+        if relation_id is not None:
+            normalized_conflict["relation_id"] = relation_id
+        conflicts.append(normalized_conflict)
+
+    return {
+        "set_id": set_id,
+        "upstream_materials_complete": upstream_materials_complete,
+        "materials": materials,
+        "relationships": relationships,
+        "conflicts": conflicts,
+    }
+
+
+def build_material_set_review(material_set):
+    pending = []
+    blockers = []
+    control_bases = {
+        material["material_id"]: []
+        for material in material_set["materials"]
+    }
+    for material in material_set["materials"]:
+        if material["status"] in {"approved", "signed"}:
+            control_bases[material["material_id"]].append(
+                "formal_status:{}".format(material["status"])
+            )
+        if material["user_designated_control"]:
+            control_bases[material["material_id"]].append(
+                "user_designated"
+            )
+    for relationship in material_set["relationships"]:
+        if (
+            relationship["relation_type"] == "governs"
+            and relationship["from_material_id"]
+            != relationship["to_material_id"]
+        ):
+            control_bases[relationship["from_material_id"]].append(
+                "relation:governs:{}".format(
+                    relationship["relation_id"]
+                )
+            )
+    control_materials = [
+        {
+            "material_id": material["material_id"],
+            "control_bases": control_bases[material["material_id"]],
+        }
+        for material in material_set["materials"]
+        if control_bases[material["material_id"]]
+    ]
+    review_conflicts = list(material_set["conflicts"])
+    conflict_relation_ids = {
+        conflict["relation_id"]
+        for conflict in material_set["conflicts"]
+        if "relation_id" in conflict
+    }
+    for relationship in material_set["relationships"]:
+        relation_type = relationship["relation_type"]
+        relation_id = relationship["relation_id"]
+        if relation_type in {"conflicts_with", "unclear"}:
+            pending.append("material_relation:{}".format(relation_id))
+            blockers.append("material_relation:{}".format(relation_id))
+        if relation_type == "conflicts_with":
+            if relation_id not in conflict_relation_ids:
+                review_conflicts.append(
+                    {
+                        "conflict_id": "relation:{}".format(
+                            relation_id
+                        ),
+                        "material_ids": [
+                            relationship["from_material_id"],
+                            relationship["to_material_id"],
+                        ],
+                        "dimension": "unclear",
+                        "difference": relationship["basis"],
+                        "impact": "not_provided",
+                        "pending_confirmation": (
+                            "provide_conflict_dimension_and_impact"
+                        ),
+                    }
+                )
+    for conflict in material_set["conflicts"]:
+        item = "material_conflict:{}".format(conflict["conflict_id"])
+        pending.append(item)
+        blockers.append(item)
+    if (
+        len(material_set["materials"]) >= 2
+        and not material_set["relationships"]
+    ):
+        pending.append("material_set:missing_relationships")
+        blockers.append("material_set:missing_relationships")
+    cross_material_ids = set()
+    for relationship in material_set["relationships"]:
+        from_material_id = relationship["from_material_id"]
+        to_material_id = relationship["to_material_id"]
+        if from_material_id != to_material_id:
+            cross_material_ids.update(
+                {from_material_id, to_material_id}
+            )
+    if len(material_set["materials"]) >= 2:
+        for material in material_set["materials"]:
+            material_id = material["material_id"]
+            if material_id not in cross_material_ids:
+                item = "material_set:unrelated_material:{}".format(
+                    material_id
+                )
+                pending.append(item)
+                blockers.append(item)
+    if not material_set["upstream_materials_complete"]:
+        pending.append("material_set:missing_upstream")
+        blockers.append("material_set:missing_upstream")
+    elif len(material_set["materials"]) < 2:
+        pending.append("material_set:insufficient_materials")
+        blockers.append("material_set:insufficient_materials")
+
+    if not material_set["upstream_materials_complete"]:
+        cross_stage_consistency = {
+            "status": "not_verifiable",
+            "reason": "missing_upstream_materials",
+        }
+    elif len(material_set["materials"]) < 2:
+        cross_stage_consistency = {
+            "status": "not_verifiable",
+            "reason": "insufficient_materials_for_cross_stage_review",
+        }
+    elif blockers:
+        cross_stage_consistency = {
+            "status": "blocked",
+            "reason": "unresolved_relationships_or_conflicts",
+        }
+    else:
+        cross_stage_consistency = {
+            "status": "reviewable",
+            "reason": "upstream_materials_declared_complete",
+        }
+
+    review = {
+        "mode": "material_set",
+        "set_id": material_set["set_id"],
+        "precedence_policy": "explicit_relationships_only",
+        "materials": material_set["materials"],
+        "relationships": material_set["relationships"],
+        "control_materials": control_materials,
+        "conflicts": review_conflicts,
+        "adjudication_policy": "report_only_user_confirmation_required",
+        "cross_stage_consistency": cross_stage_consistency,
+        "completion_claim": "not_completed",
+        "review_status": "blocked" if blockers else "reviewable",
+    }
+    return review, pending, blockers
+
+
+def build_single_material_review():
+    return {
+        "mode": "single_material",
+        "precedence_policy": "explicit_relationships_only",
+        "relationships": [],
+        "control_materials": [],
+        "conflicts": [],
+        "adjudication_policy": "report_only_user_confirmation_required",
+        "cross_stage_consistency": {
+            "status": "not_verifiable",
+            "reason": "missing_upstream_materials",
+        },
+        "completion_claim": "not_completed",
+        "review_status": "single_material_only",
+    }
+
+
 def decide_claim(claim):
     claim_id = claim["claim_id"]
     evidence_status = claim["evidence_status"]
@@ -393,6 +747,7 @@ def build_perception_decision(request):
     task = validate_task(request.get("task"))
     view = validate_material_view(request.get("material_view"))
     claims = validate_claims(request.get("claims"))
+    material_set = validate_material_set(request.get("material_set"))
     text = "\n".join(
         [task["instruction"], view["title"], view["searchable_text"]]
     )
@@ -406,6 +761,19 @@ def build_perception_decision(request):
     else:
         decision = build_unclear_decision(task, text)
     decision = apply_claim_boundaries(decision, claims)
+    if material_set is not None:
+        decision["processing_mode"] = "conservative_audit"
+        decision["load_contracts"] = decision["load_contracts"] + [
+            "common.material_set_review"
+        ]
+        review, material_pending, material_blockers = (
+            build_material_set_review(material_set)
+        )
+        decision["material_set_review"] = review
+        decision["pending_confirmations"].extend(material_pending)
+        decision["blockers"].extend(material_blockers)
+    else:
+        decision["material_set_review"] = build_single_material_review()
 
     return {
         "schema_version": SCHEMA_VERSION,

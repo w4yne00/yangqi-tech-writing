@@ -18,6 +18,7 @@ REQUIRED_FILES = [
     "references/protected-spans.md",
     "references/evidence-policy.md",
     "references/statement-force-policy.md",
+    "references/material-set-review.md",
     "references/ai-trace-patterns.md",
     "references/structural-antipatterns.md",
     "references/organization-style-contract.md",
@@ -76,8 +77,8 @@ class StructureTests(unittest.TestCase):
         self.assertLess(len(content.splitlines()), 500)
         section = content.split("## 固定执行顺序", 1)[1].split("\n## ", 1)[0]
         order = [
-            "场景", "保护项", "证据", "陈述效力", "Tier", "档位", "scope",
-            "改写", "两遍复读", "质量闸门",
+            "场景", "保护项", "证据", "陈述效力", "材料关系", "Tier",
+            "档位", "scope", "改写", "两遍复读", "质量闸门",
         ]
         positions = [section.find(token) for token in order]
         self.assertTrue(all(position >= 0 for position in positions), positions)

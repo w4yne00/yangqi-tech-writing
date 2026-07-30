@@ -40,6 +40,16 @@ class PerceptionDecisionTests(unittest.TestCase):
         request["claims"] = deepcopy(case["claims"])
         return self.run_decision(request)["decision"]
 
+    def run_material_set_case(self, case_id):
+        case = next(
+            item
+            for item in self.fixture["material_set_cases"]
+            if item["case_id"] == case_id
+        )
+        request = deepcopy(self.fixture["cases"][0]["request"])
+        request["material_set"] = deepcopy(case["material_set"])
+        return self.run_decision(request)["decision"]
+
     def test_explicit_preliminary_design_review_returns_observable_decision(self):
         result = self.run_decision(self.fixture["cases"][0]["request"])
 
@@ -198,6 +208,357 @@ class PerceptionDecisionTests(unittest.TestCase):
         )
         self.assertEqual("explicit", decision["material_subtype"]["confidence"])
         self.assertEqual("quick_path", decision["processing_mode"])
+
+    def test_material_set_preserves_all_supported_relationship_types(self):
+        decision = self.run_material_set_case(
+            "FOUNDATION-08-RELATION-TYPES"
+        )
+
+        review = decision["material_set_review"]
+        self.assertEqual("material_set", review["mode"])
+        self.assertEqual(
+            "conservative_audit",
+            decision["processing_mode"],
+        )
+        self.assertIn(
+            "common.material_set_review",
+            decision["load_contracts"],
+        )
+        self.assertEqual(
+            {
+                "material_id": "F08-REQUIREMENT",
+                "title": "批复材料",
+                "version": "1.0",
+                "material_subtype": "approval",
+                "status": "approved",
+                "date": "2026-01-10",
+                "user_designated_control": False,
+            },
+            review["materials"][0],
+        )
+        self.assertEqual(
+            [
+                "governs",
+                "derives_from",
+                "supersedes",
+                "implements",
+                "verifies",
+                "conflicts_with",
+                "unclear",
+            ],
+            [
+                relationship["relation_type"]
+                for relationship in review["relationships"]
+            ],
+        )
+        for relation_id in ("F08-R-CONFLICTS", "F08-R-UNCLEAR"):
+            item = "material_relation:{}".format(relation_id)
+            self.assertIn(item, decision["pending_confirmations"])
+            self.assertIn(item, decision["blockers"])
+        incomplete_conflict = next(
+            conflict
+            for conflict in review["conflicts"]
+            if conflict["conflict_id"] == "relation:F08-R-CONFLICTS"
+        )
+        self.assertEqual("unclear", incomplete_conflict["dimension"])
+        self.assertEqual(
+            "范围口径不一致",
+            incomplete_conflict["difference"],
+        )
+        self.assertEqual("not_provided", incomplete_conflict["impact"])
+        self.assertEqual(
+            "provide_conflict_dimension_and_impact",
+            incomplete_conflict["pending_confirmation"],
+        )
+
+    def test_newer_material_date_does_not_create_supersedes(self):
+        decision = self.run_material_set_case(
+            "FOUNDATION-08-NEWER-DATE-IS-NOT-SUPERSEDES"
+        )
+
+        review = decision["material_set_review"]
+        self.assertEqual(
+            "explicit_relationships_only",
+            review["precedence_policy"],
+        )
+        self.assertNotIn(
+            "supersedes",
+            [
+                relationship["relation_type"]
+                for relationship in review["relationships"]
+            ],
+        )
+        self.assertEqual("blocked", review["review_status"])
+        self.assertIn(
+            "material_set:missing_relationships",
+            decision["blockers"],
+        )
+
+    def test_explicit_formal_and_user_control_bases_enter_decision(self):
+        decision = self.run_material_set_case(
+            "FOUNDATION-08-RELATION-TYPES"
+        )
+
+        control_materials = {
+            item["material_id"]: item["control_bases"]
+            for item in decision["material_set_review"]["control_materials"]
+        }
+        self.assertIn(
+            "formal_status:approved",
+            control_materials["F08-REQUIREMENT"],
+        )
+        self.assertIn(
+            "relation:governs:F08-R-GOVERNS",
+            control_materials["F08-REQUIREMENT"],
+        )
+        self.assertEqual(
+            ["formal_status:signed"],
+            control_materials["F08-DESIGN"],
+        )
+        self.assertEqual(
+            ["user_designated"],
+            control_materials["F08-IMPLEMENTATION"],
+        )
+
+    def test_all_formal_conflict_dimensions_block_without_adjudication(self):
+        decision = self.run_material_set_case(
+            "FOUNDATION-08-CONFLICT-DIMENSIONS"
+        )
+
+        review = decision["material_set_review"]
+        conflicts = review["conflicts"]
+        self.assertEqual(
+            [
+                "scope",
+                "quantity",
+                "parameter",
+                "responsibility",
+                "time",
+                "conclusion",
+                "statement_force",
+            ],
+            [conflict["dimension"] for conflict in conflicts],
+        )
+        self.assertEqual("blocked", review["review_status"])
+        for conflict in conflicts:
+            self.assertTrue(conflict["difference"])
+            self.assertTrue(conflict["impact"])
+            self.assertTrue(conflict["pending_confirmation"])
+            for prohibited in ("resolution", "winner", "legal_effect"):
+                self.assertNotIn(prohibited, conflict)
+            self.assertIn(
+                "material_conflict:{}".format(conflict["conflict_id"]),
+                decision["blockers"],
+            )
+
+    def test_each_conflict_relation_requires_its_own_structured_details(self):
+        case = next(
+            item
+            for item in self.fixture["material_set_cases"]
+            if item["case_id"] == "FOUNDATION-08-CONFLICT-DIMENSIONS"
+        )
+        request = deepcopy(self.fixture["cases"][0]["request"])
+        request["material_set"] = deepcopy(case["material_set"])
+        request["material_set"]["relations"].append(
+            {
+                "relation_id": "F08-R-CONFLICT-SECOND",
+                "from_material_id": "F08-CONFLICT-LEFT",
+                "to_material_id": "F08-CONFLICT-RIGHT",
+                "relation_type": "conflicts_with",
+                "basis": "同一材料对另有参数口径冲突",
+            }
+        )
+
+        decision = self.run_decision(request)["decision"]
+
+        incomplete_conflict = next(
+            conflict
+            for conflict in decision["material_set_review"]["conflicts"]
+            if conflict["conflict_id"]
+            == "relation:F08-R-CONFLICT-SECOND"
+        )
+        self.assertEqual(
+            "同一材料对另有参数口径冲突",
+            incomplete_conflict["difference"],
+        )
+        self.assertEqual("not_provided", incomplete_conflict["impact"])
+
+    def test_missing_upstream_blocks_cross_stage_consistency_claim(self):
+        decision = self.run_material_set_case(
+            "FOUNDATION-08-MISSING-UPSTREAM"
+        )
+
+        review = decision["material_set_review"]
+        self.assertEqual(
+            {
+                "status": "not_verifiable",
+                "reason": "missing_upstream_materials",
+            },
+            review["cross_stage_consistency"],
+        )
+        self.assertEqual("not_completed", review["completion_claim"])
+        self.assertEqual("blocked", review["review_status"])
+        self.assertIn("material_set:missing_upstream", decision["blockers"])
+
+    def test_single_material_does_not_claim_material_set_review_complete(self):
+        decision = self.run_decision(
+            self.fixture["cases"][0]["request"]
+        )["decision"]
+
+        review = decision["material_set_review"]
+        self.assertEqual("single_material", review["mode"])
+        self.assertEqual("single_material_only", review["review_status"])
+        self.assertEqual(
+            "not_verifiable",
+            review["cross_stage_consistency"]["status"],
+        )
+        self.assertEqual("not_completed", review["completion_claim"])
+        self.assertNotIn("material_set:missing_upstream", decision["blockers"])
+
+    def test_one_item_material_set_cannot_claim_cross_stage_reviewable(self):
+        case = next(
+            item
+            for item in self.fixture["material_set_cases"]
+            if item["case_id"] == "FOUNDATION-08-MISSING-UPSTREAM"
+        )
+        request = deepcopy(self.fixture["cases"][0]["request"])
+        request["material_set"] = deepcopy(case["material_set"])
+        request["material_set"]["upstream_materials_complete"] = True
+
+        decision = self.run_decision(request)["decision"]
+
+        review = decision["material_set_review"]
+        self.assertEqual(
+            {
+                "status": "not_verifiable",
+                "reason": "insufficient_materials_for_cross_stage_review",
+            },
+            review["cross_stage_consistency"],
+        )
+        self.assertIn(
+            "material_set:insufficient_materials",
+            decision["blockers"],
+        )
+
+    def test_each_material_requires_an_explicit_cross_material_relationship(self):
+        case = next(
+            item
+            for item in self.fixture["material_set_cases"]
+            if item["case_id"] == "FOUNDATION-08-NEWER-DATE-IS-NOT-SUPERSEDES"
+        )
+        material_set = deepcopy(case["material_set"])
+        material_set["materials"].append(
+            {
+                "material_id": "F08-ORPHAN",
+                "title": "未声明关系的实施记录",
+                "version": "1.0",
+                "material_subtype": "implementation_record",
+                "status": "draft",
+            }
+        )
+        material_set["relations"] = [
+            {
+                "relation_id": "F08-R-PARTIAL",
+                "from_material_id": "F08-NEWER-DRAFT",
+                "to_material_id": "F08-OLDER-APPROVED",
+                "relation_type": "derives_from",
+                "basis": "工作稿引用批复材料",
+            }
+        ]
+        request = deepcopy(self.fixture["cases"][0]["request"])
+        request["material_set"] = material_set
+
+        decision = self.run_decision(request)["decision"]
+
+        review = decision["material_set_review"]
+        self.assertEqual("blocked", review["review_status"])
+        self.assertIn(
+            "material_set:unrelated_material:F08-ORPHAN",
+            decision["pending_confirmations"],
+        )
+        self.assertIn(
+            "material_set:unrelated_material:F08-ORPHAN",
+            decision["blockers"],
+        )
+
+        self_relation_request = deepcopy(request)
+        self_relation_request["material_set"]["materials"] = (
+            self_relation_request["material_set"]["materials"][:2]
+        )
+        self_relation_request["material_set"]["relations"] = [
+            {
+                "relation_id": "F08-R-SELF",
+                "from_material_id": "F08-OLDER-APPROVED",
+                "to_material_id": "F08-OLDER-APPROVED",
+                "relation_type": "governs",
+                "basis": "材料不能以自关联证明跨材料关系",
+            }
+        ]
+
+        self_relation_decision = self.run_decision(
+            self_relation_request
+        )["decision"]
+        approved_control = next(
+            item
+            for item in self_relation_decision["material_set_review"][
+                "control_materials"
+            ]
+            if item["material_id"] == "F08-OLDER-APPROVED"
+        )
+        self.assertNotIn(
+            "relation:governs:F08-R-SELF",
+            approved_control["control_bases"],
+        )
+        for material_id in ("F08-OLDER-APPROVED", "F08-NEWER-DRAFT"):
+            self.assertIn(
+                "material_set:unrelated_material:{}".format(material_id),
+                self_relation_decision["blockers"],
+            )
+
+    def test_material_set_rejects_unsupported_relation_and_conflict_dimension(self):
+        relation_case = next(
+            item
+            for item in self.fixture["material_set_cases"]
+            if item["case_id"] == "FOUNDATION-08-NEWER-DATE-IS-NOT-SUPERSEDES"
+        )
+        conflict_case = next(
+            item
+            for item in self.fixture["material_set_cases"]
+            if item["case_id"] == "FOUNDATION-08-CONFLICT-DIMENSIONS"
+        )
+        invalid_inputs = []
+
+        invalid_relation = deepcopy(relation_case["material_set"])
+        invalid_relation["relations"] = [
+            {
+                "relation_id": "F08-R-INVALID",
+                "from_material_id": "F08-OLDER-APPROVED",
+                "to_material_id": "F08-NEWER-DRAFT",
+                "relation_type": "newer_than",
+                "basis": "仅有文件日期",
+            }
+        ]
+        invalid_inputs.append((invalid_relation, "relation_type"))
+
+        invalid_conflict = deepcopy(conflict_case["material_set"])
+        invalid_conflict["conflicts"][0]["dimension"] = "legal_effect"
+        invalid_inputs.append((invalid_conflict, "dimension"))
+
+        invalid_status = deepcopy(relation_case["material_set"])
+        invalid_status["materials"][0]["status"] = "已批准"
+        invalid_inputs.append((invalid_status, "status"))
+
+        for material_set, expected_field in invalid_inputs:
+            with self.subTest(expected_field=expected_field):
+                request = deepcopy(self.fixture["cases"][0]["request"])
+                request["material_set"] = material_set
+
+                completed = self.run_raw(request)
+
+                self.assertEqual(1, completed.returncode)
+                error = json.loads(completed.stderr)
+                self.assertEqual("invalid_request", error["error"])
+                self.assertIn(expected_field, error["message"])
 
     def test_all_statement_forces_remain_distinct_from_evidence_status(self):
         decision = self.run_statement_force_case(

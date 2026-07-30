@@ -58,6 +58,251 @@
       }
     }
   ],
+  "material_set_cases": [
+    {
+      "case_id": "FOUNDATION-08-RELATION-TYPES",
+      "material_set": {
+        "set_id": "MS-F08-RELATIONS",
+        "upstream_materials_complete": true,
+        "materials": [
+          {
+            "material_id": "F08-REQUIREMENT",
+            "title": "批复材料",
+            "version": "1.0",
+            "material_subtype": "approval",
+            "status": "approved",
+            "date": "2026-01-10"
+          },
+          {
+            "material_id": "F08-DESIGN",
+            "title": "设计材料",
+            "version": "2.0",
+            "material_subtype": "detailed_design",
+            "status": "signed",
+            "date": "2026-02-10"
+          },
+          {
+            "material_id": "F08-IMPLEMENTATION",
+            "title": "实施记录",
+            "version": "1.0",
+            "material_subtype": "implementation_record",
+            "status": "draft",
+            "user_designated_control": true,
+            "date": "2026-03-10"
+          },
+          {
+            "material_id": "F08-ACCEPTANCE",
+            "title": "验收记录",
+            "version": "1.0",
+            "material_subtype": "acceptance_record",
+            "status": "draft",
+            "date": "2026-04-10"
+          }
+        ],
+        "relations": [
+          {
+            "relation_id": "F08-R-GOVERNS",
+            "from_material_id": "F08-REQUIREMENT",
+            "to_material_id": "F08-DESIGN",
+            "relation_type": "governs",
+            "basis": "用户确认该批复材料控制设计范围"
+          },
+          {
+            "relation_id": "F08-R-DERIVES",
+            "from_material_id": "F08-DESIGN",
+            "to_material_id": "F08-REQUIREMENT",
+            "relation_type": "derives_from",
+            "basis": "设计说明明确引用批复条款"
+          },
+          {
+            "relation_id": "F08-R-SUPERSEDES",
+            "from_material_id": "F08-DESIGN",
+            "to_material_id": "F08-IMPLEMENTATION",
+            "relation_type": "supersedes",
+            "basis": "双方签署的设计变更单明确替代"
+          },
+          {
+            "relation_id": "F08-R-IMPLEMENTS",
+            "from_material_id": "F08-IMPLEMENTATION",
+            "to_material_id": "F08-DESIGN",
+            "relation_type": "implements",
+            "basis": "实施记录关联设计项"
+          },
+          {
+            "relation_id": "F08-R-VERIFIES",
+            "from_material_id": "F08-ACCEPTANCE",
+            "to_material_id": "F08-IMPLEMENTATION",
+            "relation_type": "verifies",
+            "basis": "验收记录关联实施项"
+          },
+          {
+            "relation_id": "F08-R-CONFLICTS",
+            "from_material_id": "F08-DESIGN",
+            "to_material_id": "F08-REQUIREMENT",
+            "relation_type": "conflicts_with",
+            "basis": "范围口径不一致"
+          },
+          {
+            "relation_id": "F08-R-UNCLEAR",
+            "from_material_id": "F08-ACCEPTANCE",
+            "to_material_id": "F08-REQUIREMENT",
+            "relation_type": "unclear",
+            "basis": "输入未说明两者关系"
+          }
+        ],
+        "conflicts": []
+      }
+    },
+    {
+      "case_id": "FOUNDATION-08-NEWER-DATE-IS-NOT-SUPERSEDES",
+      "material_set": {
+        "set_id": "MS-F08-DATE-NEAR-MISS",
+        "upstream_materials_complete": true,
+        "materials": [
+          {
+            "material_id": "F08-OLDER-APPROVED",
+            "title": "已批复范围材料",
+            "version": "1.0",
+            "material_subtype": "approval",
+            "status": "approved",
+            "date": "2026-01-10"
+          },
+          {
+            "material_id": "F08-NEWER-DRAFT",
+            "title": "较新的工作稿",
+            "version": "2.0",
+            "material_subtype": "detailed_design",
+            "status": "draft",
+            "date": "2026-06-10"
+          }
+        ],
+        "relations": [],
+        "conflicts": []
+      }
+    },
+    {
+      "case_id": "FOUNDATION-08-CONFLICT-DIMENSIONS",
+      "material_set": {
+        "set_id": "MS-F08-CONFLICTS",
+        "upstream_materials_complete": true,
+        "materials": [
+          {
+            "material_id": "F08-CONFLICT-LEFT",
+            "title": "控制材料",
+            "version": "1.0",
+            "material_subtype": "approval",
+            "status": "approved"
+          },
+          {
+            "material_id": "F08-CONFLICT-RIGHT",
+            "title": "落实材料",
+            "version": "1.0",
+            "material_subtype": "detailed_design",
+            "status": "draft"
+          }
+        ],
+        "relations": [
+          {
+            "relation_id": "F08-R-CONFLICT-DETAIL",
+            "from_material_id": "F08-CONFLICT-LEFT",
+            "to_material_id": "F08-CONFLICT-RIGHT",
+            "relation_type": "conflicts_with",
+            "basis": "七类正式口径不能同时成立"
+          }
+        ],
+        "conflicts": [
+          {
+            "conflict_id": "F08-C-SCOPE",
+            "relation_id": "F08-R-CONFLICT-DETAIL",
+            "left_material_id": "F08-CONFLICT-LEFT",
+            "right_material_id": "F08-CONFLICT-RIGHT",
+            "dimension": "scope",
+            "difference": "批复范围为总部，设计范围含三家所属单位",
+            "impact": "设计建设边界无法按当前口径确认",
+            "pending_confirmation": "确认适用范围及其正式变更依据"
+          },
+          {
+            "conflict_id": "F08-C-QUANTITY",
+            "relation_id": "F08-R-CONFLICT-DETAIL",
+            "left_material_id": "F08-CONFLICT-LEFT",
+            "right_material_id": "F08-CONFLICT-RIGHT",
+            "dimension": "quantity",
+            "difference": "批复数量为30套，设计数量为32套",
+            "impact": "设备清单和投资口径不一致",
+            "pending_confirmation": "确认控制数量及调整依据"
+          },
+          {
+            "conflict_id": "F08-C-PARAMETER",
+            "relation_id": "F08-R-CONFLICT-DETAIL",
+            "left_material_id": "F08-CONFLICT-LEFT",
+            "right_material_id": "F08-CONFLICT-RIGHT",
+            "dimension": "parameter",
+            "difference": "控制参数为80ms，设计参数为100ms",
+            "impact": "验收指标无法确定",
+            "pending_confirmation": "确认适用参数"
+          },
+          {
+            "conflict_id": "F08-C-RESPONSIBILITY",
+            "relation_id": "F08-R-CONFLICT-DETAIL",
+            "left_material_id": "F08-CONFLICT-LEFT",
+            "right_material_id": "F08-CONFLICT-RIGHT",
+            "dimension": "responsibility",
+            "difference": "一份材料由建设单位负责，另一份由承建方负责",
+            "impact": "整改责任主体不明确",
+            "pending_confirmation": "确认责任分工及签署依据"
+          },
+          {
+            "conflict_id": "F08-C-TIME",
+            "relation_id": "F08-R-CONFLICT-DETAIL",
+            "left_material_id": "F08-CONFLICT-LEFT",
+            "right_material_id": "F08-CONFLICT-RIGHT",
+            "dimension": "time",
+            "difference": "计划完成日期分别为6月30日和7月31日",
+            "impact": "进度基线无法统一",
+            "pending_confirmation": "确认有效进度基线"
+          },
+          {
+            "conflict_id": "F08-C-CONCLUSION",
+            "relation_id": "F08-R-CONFLICT-DETAIL",
+            "left_material_id": "F08-CONFLICT-LEFT",
+            "right_material_id": "F08-CONFLICT-RIGHT",
+            "dimension": "conclusion",
+            "difference": "一份材料结论为通过，另一份为待整改后复核",
+            "impact": "无法形成一致的验收状态",
+            "pending_confirmation": "确认有效结论来源"
+          },
+          {
+            "conflict_id": "F08-C-FORCE",
+            "relation_id": "F08-R-CONFLICT-DETAIL",
+            "left_material_id": "F08-CONFLICT-LEFT",
+            "right_material_id": "F08-CONFLICT-RIGHT",
+            "dimension": "statement_force",
+            "difference": "同一内容分别被表述为建议方案和已批复边界",
+            "impact": "陈述效力无法确定",
+            "pending_confirmation": "确认该内容的正式效力"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "FOUNDATION-08-MISSING-UPSTREAM",
+      "material_set": {
+        "set_id": "MS-F08-MISSING-UPSTREAM",
+        "upstream_materials_complete": false,
+        "materials": [
+          {
+            "material_id": "F08-DOWNSTREAM-ONLY",
+            "title": "验收记录",
+            "version": "1.0",
+            "material_subtype": "acceptance_record",
+            "status": "draft"
+          }
+        ],
+        "relations": [],
+        "conflicts": []
+      }
+    }
+  ],
   "statement_force_cases": [
     {
       "case_id": "FOUNDATION-06-POSITIVE-STATEMENT-FORCES",

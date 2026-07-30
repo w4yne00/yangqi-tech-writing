@@ -6,6 +6,40 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class ReferenceContractTests(unittest.TestCase):
+    def test_material_set_review_requires_explicit_relations_and_blocks_conflicts(self):
+        text = (ROOT / "references/material-set-review.md").read_text(
+            encoding="utf-8"
+        )
+        for phrase in [
+            "governs",
+            "derives_from",
+            "supersedes",
+            "implements",
+            "verifies",
+            "conflicts_with",
+            "unclear",
+            "文件日期",
+            "批准",
+            "签署",
+            "`approved`",
+            "`signed`",
+            "用户指定",
+            "范围",
+            "数量",
+            "参数",
+            "责任",
+            "时间",
+            "结论",
+            "陈述效力",
+            "无法验证跨阶段一致性",
+            "跨材料关系",
+            "`not_provided`",
+            "`provide_conflict_dimension_and_impact`",
+            "`relation_id`",
+            "不代替",
+        ]:
+            self.assertIn(phrase, text)
+
     def test_statement_force_policy_keeps_force_orthogonal_and_conservative(self):
         text = (ROOT / "references/statement-force-policy.md").read_text(
             encoding="utf-8"
