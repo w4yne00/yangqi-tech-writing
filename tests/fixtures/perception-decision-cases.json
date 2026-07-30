@@ -57,5 +57,158 @@
         }
       }
     }
+  ],
+  "statement_force_cases": [
+    {
+      "case_id": "FOUNDATION-06-POSITIVE-STATEMENT-FORCES",
+      "claims": [
+        {
+          "claim_id": "F06-POS-ASSUMPTION",
+          "text": "假设现有机房具备扩容条件。",
+          "evidence_status": "OPINION",
+          "statement_force": "assumption",
+          "requested_statement_force": "assumption",
+          "owner": "设计组"
+        },
+        {
+          "claim_id": "F06-POS-JUDGMENT",
+          "text": "经比较，现网扩容风险较高。",
+          "evidence_status": "OPINION",
+          "statement_force": "professional_judgment",
+          "requested_statement_force": "professional_judgment",
+          "owner": "设计组"
+        },
+        {
+          "claim_id": "F06-POS-RECOMMENDATION",
+          "text": "建议采用双节点部署方案。",
+          "evidence_status": "SUPPORTED",
+          "statement_force": "recommended_solution",
+          "requested_statement_force": "recommended_solution",
+          "source_ref": "方案比选表2"
+        },
+        {
+          "claim_id": "F06-POS-APPROVAL",
+          "text": "批复范围为集团总部及32家所属单位。",
+          "evidence_status": "SUPPORTED",
+          "statement_force": "approved_boundary",
+          "requested_statement_force": "approved_boundary",
+          "source_ref": "批复文件第3条"
+        },
+        {
+          "claim_id": "F06-POS-COMMITMENT",
+          "text": "承建方应于合同生效后90日内完成部署。",
+          "evidence_status": "SUPPORTED",
+          "statement_force": "contractual_commitment",
+          "requested_statement_force": "contractual_commitment",
+          "source_ref": "合同5.1"
+        },
+        {
+          "claim_id": "F06-POS-IMPLEMENTATION",
+          "text": "32家所属单位已完成接入。",
+          "evidence_status": "SUPPORTED",
+          "statement_force": "implementation_fact",
+          "requested_statement_force": "implementation_fact",
+          "source_ref": "实施记录汇总表"
+        },
+        {
+          "claim_id": "F06-POS-ACCEPTANCE",
+          "text": "验收组同意通过初步验收。",
+          "evidence_status": "SUPPORTED",
+          "statement_force": "acceptance_conclusion",
+          "requested_statement_force": "acceptance_conclusion",
+          "source_ref": "初步验收意见"
+        }
+      ]
+    },
+    {
+      "case_id": "FOUNDATION-06-STRENGTHENING-NEAR-MISS",
+      "claims": [
+        {
+          "claim_id": "F06-STR-001",
+          "text": "建议分两期建设。",
+          "evidence_status": "SUPPORTED",
+          "statement_force": "recommended_solution",
+          "requested_statement_force": "approved_boundary",
+          "source_ref": "可研报告7.2"
+        }
+      ]
+    },
+    {
+      "case_id": "FOUNDATION-06-WEAKENING-NEAR-MISS",
+      "claims": [
+        {
+          "claim_id": "F06-WEAK-001",
+          "text": "平台已完成部署。",
+          "evidence_status": "SUPPORTED",
+          "statement_force": "implementation_fact",
+          "requested_statement_force": "recommended_solution",
+          "source_ref": "实施记录第12项"
+        }
+      ]
+    },
+    {
+      "case_id": "FOUNDATION-06-UNCLEAR-FORCE",
+      "claims": [
+        {
+          "claim_id": "F06-UNCLEAR-001",
+          "text": "本期建设范围包括灾备中心。",
+          "evidence_status": "NEEDS_USER_CONFIRMATION",
+          "statement_force": "unknown",
+          "requested_statement_force": "implementation_fact"
+        }
+      ]
+    },
+    {
+      "case_id": "FOUNDATION-06-UNSUPPORTED-HIGH-EFFECT",
+      "claims": [
+        {
+          "claim_id": "F06-UNSUPPORTED-001",
+          "text": "平台已完成全部部署。",
+          "evidence_status": "UNSUPPORTED",
+          "statement_force": "implementation_fact",
+          "requested_statement_force": "implementation_fact"
+        }
+      ]
+    },
+    {
+      "case_id": "FOUNDATION-06-OPINION-FORCE-CONFLICT",
+      "claims": [
+        {
+          "claim_id": "F06-OPINION-CONFLICT-001",
+          "text": "项目已通过最终验收。",
+          "evidence_status": "OPINION",
+          "statement_force": "acceptance_conclusion",
+          "requested_statement_force": "acceptance_conclusion",
+          "owner": "项目组"
+        }
+      ]
+    },
+    {
+      "case_id": "FOUNDATION-06-CAUSAL-RISK-BOUNDARY",
+      "claims": [
+        {
+          "claim_id": "F06-CAUSAL-001",
+          "text": "上游调整可能影响下游整改节点。",
+          "evidence_status": "SUPPORTED",
+          "statement_force": "professional_judgment",
+          "requested_statement_force": "implementation_fact",
+          "source_ref": "进度协调纪要第4项"
+        }
+      ]
+    },
+    {
+      "case_id": "FOUNDATION-06-CONFLICT",
+      "claims": [
+        {
+          "claim_id": "F06-CONFLICT-001",
+          "text": "本期建设范围包括32家所属单位。",
+          "evidence_status": "CONTRADICTED",
+          "statement_force": "approved_boundary",
+          "requested_statement_force": "contractual_commitment",
+          "source_ref": "批复文件第3条",
+          "conflict_ref": "合同附件记载30家所属单位"
+        }
+      ]
+    }
   ]
 }

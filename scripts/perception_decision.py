@@ -13,6 +13,7 @@ SCHEMA_VERSION = "1.0"
 CONTENT_CONTRACTS = [
     "common.protected_spans",
     "common.evidence_policy",
+    "common.statement_force_policy",
 ]
 QUALITY_CONTRACTS = [
     "common.quality_gate_h1_h6",
@@ -35,6 +36,28 @@ NEGATED_PRELIMINARY_DESIGN_PATTERNS = (
     ),
 )
 DESIGN_SIGNALS = ("设计",)
+EVIDENCE_STATUSES = {
+    "SUPPORTED",
+    "OPINION",
+    "UNSUPPORTED",
+    "CONTRADICTED",
+    "NEEDS_USER_CONFIRMATION",
+}
+STATEMENT_FORCES = {
+    "assumption",
+    "professional_judgment",
+    "recommended_solution",
+    "approved_boundary",
+    "contractual_commitment",
+    "implementation_fact",
+    "acceptance_conclusion",
+}
+SOURCE_REQUIRED_STATEMENT_FORCES = {
+    "approved_boundary",
+    "contractual_commitment",
+    "implementation_fact",
+    "acceptance_conclusion",
+}
 
 
 class RequestError(ValueError):
@@ -140,6 +163,151 @@ def validate_task(raw_task):
     return {"instruction": instruction, "mode": mode, "scope": scope}
 
 
+def validate_claims(raw_claims):
+    if raw_claims is None:
+        return []
+    if not isinstance(raw_claims, list):
+        raise RequestError("claims 必须是数组")
+
+    claims = []
+    seen_claim_ids = set()
+    for index, raw_claim in enumerate(raw_claims):
+        field = "claims[{}]".format(index)
+        claim = require_mapping(raw_claim, field)
+        claim_id = require_text(claim, "claim_id")
+        if claim_id in seen_claim_ids:
+            raise RequestError("claims.claim_id 不得重复: {}".format(claim_id))
+        seen_claim_ids.add(claim_id)
+
+        text = require_text(claim, "text")
+        evidence_status = require_text(claim, "evidence_status")
+        if evidence_status not in EVIDENCE_STATUSES:
+            raise RequestError(
+                "{}.evidence_status 不是受支持的证据状态".format(field)
+            )
+
+        statement_force = require_text(claim, "statement_force")
+        if (
+            statement_force not in STATEMENT_FORCES
+            and statement_force != "unknown"
+        ):
+            raise RequestError(
+                "{}.statement_force 不是受支持的陈述效力".format(field)
+            )
+
+        requested_force = claim.get(
+            "requested_statement_force", statement_force
+        )
+        if (
+            not isinstance(requested_force, str)
+            or (
+                requested_force not in STATEMENT_FORCES
+                and requested_force != "unknown"
+            )
+        ):
+            raise RequestError(
+                "{}.requested_statement_force 不是受支持的陈述效力".format(
+                    field
+                )
+            )
+
+        raw_source_ref = claim.get("source_ref", "")
+        source_ref = (
+            raw_source_ref.strip()
+            if isinstance(raw_source_ref, str)
+            else ""
+        )
+        if evidence_status == "SUPPORTED" and not source_ref:
+            raise RequestError(
+                "{}.source_ref 是 SUPPORTED 陈述的必填项".format(field)
+            )
+
+        claims.append(
+            {
+                "claim_id": claim_id,
+                "text": text,
+                "evidence_status": evidence_status,
+                "statement_force": statement_force,
+                "requested_statement_force": requested_force,
+                "source_ref": source_ref,
+            }
+        )
+    return claims
+
+
+def decide_claim(claim):
+    claim_id = claim["claim_id"]
+    evidence_status = claim["evidence_status"]
+    source_force = claim["statement_force"]
+    requested_force = claim["requested_statement_force"]
+    pending = []
+    blockers = []
+
+    if source_force == "unknown":
+        pending.append("statement_force:{}".format(claim_id))
+
+    if evidence_status == "CONTRADICTED":
+        allowed_force = None
+        action = "block_conflict"
+        blockers.append("claim:{}".format(claim_id))
+    elif source_force == "unknown":
+        allowed_force = "assumption"
+        action = "confirm_and_use_lower_force"
+        blockers.append("claim:{}".format(claim_id))
+    elif evidence_status == "NEEDS_USER_CONFIRMATION":
+        allowed_force = source_force
+        action = "confirm_before_finalizing"
+        pending.append("evidence:{}".format(claim_id))
+        blockers.append("claim:{}".format(claim_id))
+    elif (
+        evidence_status == "OPINION"
+        and source_force in SOURCE_REQUIRED_STATEMENT_FORCES
+    ):
+        allowed_force = None
+        action = "confirm_evidence_force_alignment"
+        pending.append("evidence_force:{}".format(claim_id))
+        blockers.append("claim:{}".format(claim_id))
+    elif evidence_status == "UNSUPPORTED":
+        allowed_force = source_force
+        action = "require_source"
+        if source_force in SOURCE_REQUIRED_STATEMENT_FORCES:
+            blockers.append("claim:{}".format(claim_id))
+    elif requested_force != source_force:
+        allowed_force = source_force
+        action = "preserve_source_force"
+    else:
+        allowed_force = source_force
+        action = "preserve"
+
+    return (
+        {
+            "claim_id": claim_id,
+            "evidence_status": evidence_status,
+            "source_statement_force": source_force,
+            "requested_statement_force": requested_force,
+            "allowed_statement_force": allowed_force,
+            "action": action,
+        },
+        pending,
+        blockers,
+    )
+
+
+def apply_claim_boundaries(decision, claims):
+    claim_decisions = []
+    pending = list(decision["pending_confirmations"])
+    blockers = list(decision["blockers"])
+    for claim in claims:
+        claim_decision, claim_pending, claim_blockers = decide_claim(claim)
+        claim_decisions.append(claim_decision)
+        pending.extend(claim_pending)
+        blockers.extend(claim_blockers)
+    decision["claim_decisions"] = claim_decisions
+    decision["pending_confirmations"] = pending
+    decision["blockers"] = blockers
+    return decision
+
+
 def build_explicit_preliminary_design_decision(task):
     supports_review = task["mode"] in {"review", "annotation"}
     quick_review = supports_review and task["scope"] == "local"
@@ -224,6 +392,7 @@ def build_perception_decision(request):
     request = require_mapping(request, "request")
     task = validate_task(request.get("task"))
     view = validate_material_view(request.get("material_view"))
+    claims = validate_claims(request.get("claims"))
     text = "\n".join(
         [task["instruction"], view["title"], view["searchable_text"]]
     )
@@ -236,6 +405,7 @@ def build_perception_decision(request):
         decision = build_explicit_preliminary_design_decision(task)
     else:
         decision = build_unclear_decision(task, text)
+    decision = apply_claim_boundaries(decision, claims)
 
     return {
         "schema_version": SCHEMA_VERSION,

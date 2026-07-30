@@ -33,6 +33,10 @@ python3 "$HOME/.agents/skills/skill-creator/scripts/quick_validate.py" .
 
 ## Results
 
+- Foundation 06 当前根目录完整单元测试为 88 项通过、0 项失败；三个既有审计脚本烟测保持预期退出码，四个产品 JSON 均可解析，Skill 结构校验通过。
+- Foundation 06 在既有最高层感知决策接缝增加 7 类陈述效力和逐项联合决策；正向、强化近失配、弱化近失配、效力不明、高效力无来源及冲突案例均通过。合成夹具继续标记为 `deterministic-synthetic-fixture`，不构成真实模型表现证据。
+- 有来源的建议保持 `recommended_solution`，不会因文种转换成为 `approved_boundary`；实施事实也不会被弱化为建议。效力不明时输出待确认项并暂按 `assumption`，冲突和高效力无来源陈述继续阻断定稿。
+- 现有因果外推测试全部通过；上游偏差仍不能转写为下游既成事实，陈述效力策略未覆盖同一对象、计划基线和材料时点要求。
 - Foundation 01 当前根目录完整单元测试为 76 项通过、0 项失败；三个既有审计脚本烟测、产品 JSON 解析和 Skill 结构校验继续符合原合同。
 - Foundation 01 新增 2 个最高层感知决策案例和 10 项外部行为测试：明确的初步设计审阅输出完整决策，信息不足或材料类型被否定时保留 `unknown`、`unclear` 和候选分类，非审阅任务不扩大支持声明，最小定位可由任一有效片段提供。
 - 新增案例标记为 `deterministic-synthetic-fixture`，`model_execution` 为 `false`；它只验证确定性决策合同和测试数据一致性，不代表真实模型运行通过率。

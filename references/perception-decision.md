@@ -4,13 +4,16 @@
 
 ## 输入合同
 
-请求包含 `task` 和 `material_view`：
+请求包含 `task`、`material_view` 和可选的 `claims`：
 
 - `task`：包含用户指令、任务模式和处理范围；任务模式使用 `create`、`continue`、`rewrite`、`review` 或 `annotation`。
 - `material_view`：`schema_version` 为 `1.0`，`view_type` 为 `material_normalized_view`，并保留 `source_id`、`material_status`、标题及至少一个带 `locator` 的内容片段。
+- `claims`：每项至少包含 `claim_id`、`text`、`evidence_status` 和 `statement_force`；文种转换请求改变表达身份时另给 `requested_statement_force`。
 - `is_formal_material` 必须为 `false`。标准化视图是从来源材料提取的派生输入，不产生新的批准、签署、合同或验收效力。
 
 当前最小定位可以是章节和页码，也可以是其他能够回到来源材料复核的非空定位对象。核心不解析 DOCX、PDF、表格、图片或 OCR。
+
+`evidence_status` 使用 `SUPPORTED`、`OPINION`、`UNSUPPORTED`、`CONTRADICTED` 或 `NEEDS_USER_CONFIRMATION`；`SUPPORTED` 必须提供 `source_ref`。`statement_force` 使用 `assumption`、`professional_judgment`、`recommended_solution`、`approved_boundary`、`contractual_commitment`、`implementation_fact`、`acceptance_conclusion` 或 `unknown`。
 
 ## 输出合同
 
@@ -21,6 +24,8 @@
 - 任务模式保持用户授权，不因材料分类改变。
 - 支持级别只声明 `recognition_coverage` 或 `basic_support`。最小切片不声明深度支持、联审支持或前向验证。
 - 处理模式可以是 `quick_path` 或 `conservative_audit`。快速通道仍执行保护项、证据和 H1—H6。
+- `claim_decisions` 逐项输出证据状态、来源效力、请求效力、允许效力和处理动作，保持证据状态与陈述效力正交。
+- 来源效力与请求效力不一致时使用 `preserve_source_force`；效力不明时使用 `confirm_and_use_lower_force` 并暂按 `assumption`；证据冲突时使用 `block_conflict` 且不产生允许效力；`OPINION` 与正式效力并存时使用 `confirm_evidence_force_alignment` 并阻断。
 - 加载合同使用稳定的语义标识，不暴露内部目录扫描顺序。
 - 待确认项列出阻止确定分类的维度；阻断项只记录不能继续自动处理的事项。
 
@@ -28,12 +33,13 @@
 
 1. `common.protected_spans`
 2. `common.evidence_policy`
-3. `scene.architecture_design`
-4. `common.quality_gate_h1_h6`
+3. `common.statement_force_policy`
+4. `scene.architecture_design`
+5. `common.quality_gate_h1_h6`
 
 当前切片只对明确的初步设计 `review` 或 `annotation` 声明基础支持。其他任务模式即使材料分类明确，也只声明识别覆盖并进入保守审阅，等待后续合同扩展。
 
-缺少足够信号、信号被明确否定或相互冲突时，只加载共性保护、证据和质量合同，进入保守审阅；不得为了获得确定分类而补造业务域、生命周期或材料子类型。
+缺少足够信号、信号被明确否定或相互冲突时，只加载共性保护、证据、陈述效力和质量合同，进入保守审阅；不得为了获得确定分类而补造业务域、生命周期或材料子类型。
 
 ## 调用
 

@@ -6,6 +6,25 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class ReferenceContractTests(unittest.TestCase):
+    def test_statement_force_policy_keeps_force_orthogonal_and_conservative(self):
+        text = (ROOT / "references/statement-force-policy.md").read_text(
+            encoding="utf-8"
+        )
+        for phrase in [
+            "assumption",
+            "professional_judgment",
+            "recommended_solution",
+            "approved_boundary",
+            "contractual_commitment",
+            "implementation_fact",
+            "acceptance_conclusion",
+            "SUPPORTED",
+            "NEEDS_USER_CONFIRMATION",
+            "文种转换",
+            "因果外推",
+        ]:
+            self.assertIn(phrase, text)
+
     def test_structural_antipatterns_have_required_checks(self):
         text = (ROOT / "references/structural-antipatterns.md").read_text(encoding="utf-8")
         for phrase in ["段落换序", "信息增量", "机械同构", "空转总结", "方案比选"]:
