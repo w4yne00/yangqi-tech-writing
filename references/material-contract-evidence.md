@@ -32,7 +32,7 @@ python3 scripts/material_contract_registry.py material-contract-evidence-bundle.
 - `required_inputs`：所需输入、用途说明和是否必需；
 - `content_responsibilities`：本材料必须承担的内容责任；
 - `reasonable_depth`：本生命周期位置的合理深度及上下游边界；
-- `statement_force`：允许的陈述效力与禁止的效力跃迁；
+- `statement_force`：允许的陈述效力，以及由 `from`、`to` 两端组成的禁止效力跃迁；
 - `traceability`：要求、设计、承诺、实施、结论和证据之间应建立的追溯关系；
 - `common_failures`：来自真实退回或审查的常见失败；
 - `missing_information_handling`：缺失信息触发的占位、待确认、降级或阻断动作；
@@ -49,7 +49,7 @@ python3 scripts/material_contract_registry.py material-contract-evidence-bundle.
 |---|---|
 | `sample_id` | 登记包内唯一编号 |
 | `source` | `source_id`、`source_type` 和可复核 `locator` |
-| `authorization` | 授权状态 `status` 和授权用途 `scope` |
+| `authorization` | 授权状态 `status` 和授权用途数组 `scope` |
 | `redaction_status` | `redacted`、`not_required`、`pending` 或 `failed` |
 | `material_version` | 被评审材料或正式要求的版本 |
 | `review_status` | `approved`、`pending` 或 `rejected` |
@@ -66,6 +66,8 @@ python3 scripts/material_contract_registry.py material-contract-evidence-bundle.
 ## 数据边界
 
 - `authorization.status` 只有 `authorized` 或 `public_reuse` 时，样本才能进入可复用用途；`restricted` 和 `unknown` 只能保留为私有审阅登记。
+- `intended_uses` 必须是 `authorization.scope` 的子集，不能用“已授权”状态绕过具体用途边界。
+- `review_status` 只有 `approved` 时，样本才能进入通用规则、公开评测或能力证据；`pending` 和 `rejected` 只能保留为私有审阅登记。
 - `project_restricted` 样本只能登记为 `private_review`，不能进入 `generic_rule`、`public_eval` 或 `capability_evidence`。
 - 真实案例在进入通用规则、公开评测或能力证据前，必须获得授权、完成脱敏并通过评审。
 - `prohibited_persistence` 会直接触发 `persistence_rejected_sensitive_data` 阻断。

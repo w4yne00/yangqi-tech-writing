@@ -33,7 +33,10 @@
         "professional_judgment"
       ],
       "prohibited_transitions": [
-        "professional_judgment->approved_boundary"
+        {
+          "from": "professional_judgment",
+          "to": "approved_boundary"
+        }
       ]
     },
     "traceability": [
@@ -69,7 +72,9 @@
       },
       "authorization": {
         "status": "authorized",
-        "scope": "private_validation"
+        "scope": [
+          "private_review"
+        ]
       },
       "redaction_status": "not_required",
       "material_version": "REPLACE-MATERIAL-VERSION",

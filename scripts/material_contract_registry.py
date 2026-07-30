@@ -98,6 +98,7 @@ SAMPLE_FIELDS = {
 }
 SOURCE_FIELDS = {"source_id", "source_type", "locator"}
 AUTHORIZATION_FIELDS = {"status", "scope"}
+TRANSITION_FIELDS = {"from", "to"}
 
 DEEP_SUPPORT_CASES = {
     "formal_requirement",
@@ -203,6 +204,45 @@ def validate_named_entries(raw_entries, field, required_fields):
     return normalized
 
 
+def validate_statement_transitions(raw_transitions):
+    field = "contract.statement_force.prohibited_transitions"
+    if not isinstance(raw_transitions, list) or not raw_transitions:
+        raise ContractError("{} 必须是非空数组".format(field))
+    transitions = []
+    seen = set()
+    for index, raw_transition in enumerate(raw_transitions):
+        item_field = "{}[{}]".format(field, index)
+        transition = require_mapping(raw_transition, item_field)
+        reject_unknown_fields(transition, TRANSITION_FIELDS, item_field)
+        require_fields(
+            transition,
+            TRANSITION_FIELDS,
+            item_field,
+            "missing_contract_metadata",
+        )
+        from_force = require_text(transition, "from", item_field)
+        to_force = require_text(transition, "to", item_field)
+        unknown_forces = sorted(
+            {from_force, to_force} - STATEMENT_FORCES
+        )
+        if unknown_forces:
+            raise ContractError(
+                "{} 包含不受支持的陈述效力: {}".format(
+                    item_field, ", ".join(unknown_forces)
+                )
+            )
+        key = (from_force, to_force)
+        if key in seen:
+            raise ContractError(
+                "{} 不得包含重复跃迁: {} -> {}".format(
+                    field, from_force, to_force
+                )
+            )
+        seen.add(key)
+        transitions.append({"from": from_force, "to": to_force})
+    return transitions
+
+
 def validate_contract(raw_contract):
     contract = require_mapping(raw_contract, "contract")
     reject_unknown_fields(contract, CONTRACT_FIELDS, "contract")
@@ -273,9 +313,8 @@ def validate_contract(raw_contract):
                 "包含不受支持的陈述效力: {}"
             ).format(", ".join(unknown_forces))
         )
-    prohibited_transitions = require_text_list(
-        statement_force.get("prohibited_transitions"),
-        "contract.statement_force.prohibited_transitions",
+    prohibited_transitions = validate_statement_transitions(
+        statement_force.get("prohibited_transitions")
     )
 
     traceability = validate_named_entries(
@@ -369,6 +408,19 @@ def validate_samples(raw_samples):
             raise ContractError(
                 "{}.authorization.status 不受支持".format(field)
             )
+        authorization_scope = require_text_list(
+            authorization.get("scope"),
+            "{}.authorization.scope".format(field),
+        )
+        unknown_scope_uses = sorted(
+            set(authorization_scope) - INTENDED_USES
+        )
+        if unknown_scope_uses:
+            raise ContractError(
+                "{}.authorization.scope 包含不受支持的用途: {}".format(
+                    field, ", ".join(unknown_scope_uses)
+                )
+            )
 
         redaction_status = require_text(sample, "redaction_status", field)
         if redaction_status not in REDACTION_STATUSES:
@@ -408,6 +460,16 @@ def validate_samples(raw_samples):
             "public_eval",
             "capability_evidence",
         }
+        unauthorized_uses = sorted(
+            set(intended_uses) - set(authorization_scope)
+        )
+        if unauthorized_uses:
+            raise ContractError(
+                "样本 {} 的用途超出授权范围: {}".format(
+                    sample_id, ", ".join(unauthorized_uses)
+                ),
+                "authorization_scope_violation",
+            )
         if (
             authorization_status not in {"authorized", "public_reuse"}
             and reusable_uses.intersection(intended_uses)
@@ -418,6 +480,17 @@ def validate_samples(raw_samples):
                     "公开评测或能力证据"
                 ).format(sample_id),
                 "authorization_scope_violation",
+            )
+        if (
+            review_status != "approved"
+            and reusable_uses.intersection(intended_uses)
+        ):
+            raise ContractError(
+                (
+                    "样本 {} 尚未通过评审，不能进入通用规则、"
+                    "公开评测或能力证据"
+                ).format(sample_id),
+                "review_status_violation",
             )
         if (
             data_classification == "project_restricted"
@@ -495,11 +568,7 @@ def validate_samples(raw_samples):
                 },
                 "authorization": {
                     "status": authorization_status,
-                    "scope": require_text(
-                        authorization,
-                        "scope",
-                        "{}.authorization".format(field),
-                    ),
+                    "scope": authorization_scope,
                 },
                 "redaction_status": redaction_status,
                 "material_version": require_text(
