@@ -4,7 +4,7 @@
 
 ## 两阶段处理
 
-完整方案新建，以及提供 `material_set` 的多材料整合任务，默认使用 `two_stage`。第一阶段只形成可确认的写作准备单，用户确认材料、范围、效力和缺口后，第二阶段才生成或改写成稿。
+已识别的完整方案新建，以及提供 `material_set` 的多材料整合任务，默认使用 `two_stage`。第一阶段只形成可确认的写作准备单，用户确认材料、范围、效力和缺口后，第二阶段才生成或改写成稿。当前确定性切片将明确的初步设计 `create + document` 视为完整方案新建；材料子类型不明的普通文档新建保持 `conservative_audit`，不得仅凭文档级范围扩大处理。
 
 写作准备单至少包含：
 
@@ -18,7 +18,7 @@
 8. 能回到来源材料、Claim 和显式关系的追溯摘要；
 9. 第二阶段拟加载合同。
 
-准备单使用 `current_stage: preparation`、`confirmation_required: true` 和 `next_stage: draft_after_user_confirmation` 表示阶段边界。`confirmation_boundary.confirmed` 只记录用户输入或有明确来源支持的信息；`requires_user_confirmation` 逐项引用公开待确认标识。分类依据、来源定位、证据状态和陈述效力可以公开，内部分析过程不进入准备单。
+准备单使用 `current_stage: preparation`、`confirmation_required: true` 和 `next_stage: draft_after_user_confirmation` 表示阶段边界。`confirmation_boundary.confirmed` 以 `category`、`item_id`、`value` 和 `basis` 记录用户输入、有明确来源支持的信息及其可复核派生项，覆盖任务、材料、感知维度、Claim、明确材料关系和控制依据。`requires_user_confirmation` 以 `category`、`item_id` 和 `basis` 逐项记录感知缺口、Claim 缺口、关系、冲突或材料集问题；任何进入“需要用户确认”桶的 Claim 必须同步进入该清单。分类依据、来源定位、证据状态和陈述效力可以公开，内部分析过程不进入准备单。
 
 材料标准化视图继续标记为 `is_formal_material: false`。它可以进入材料清单和追溯摘要，但不因进入准备单而获得批准、签署、合同或验收效力。
 

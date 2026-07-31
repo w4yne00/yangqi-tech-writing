@@ -671,6 +671,28 @@ def build_writing_preparation_sheet(decision, view, claims):
         "confirmed": [],
         "requires_user_confirmation": [],
     }
+    confirmed_information = [
+        {
+            "category": "task",
+            "item_id": "task_mode",
+            "value": decision["task_mode"],
+            "basis": "user_input",
+        },
+        {
+            "category": "material",
+            "item_id": "material_view:{}".format(view["source_id"]),
+            "value": {
+                "material_status": view["material_status"],
+                "is_formal_material": False,
+            },
+            "basis": "material_view_input",
+        },
+    ]
+    pending_confirmations = list(decision["pending_confirmations"])
+    confirmation_bases = {
+        item_id: "decision_requires_user_confirmation"
+        for item_id in pending_confirmations
+    }
     claim_decisions = {
         item["claim_id"]: item
         for item in decision["claim_decisions"]
@@ -708,6 +730,26 @@ def build_writing_preparation_sheet(decision, view, claims):
             else "confirmed"
         )
         bucket[status].append(item)
+        confirmation_id = "claim:{}".format(claim["claim_id"])
+        if requires_confirmation:
+            if confirmation_id not in pending_confirmations:
+                pending_confirmations.append(confirmation_id)
+            confirmation_bases[confirmation_id] = (
+                "claim_action:{}".format(claim_decision["action"])
+            )
+        else:
+            confirmed_information.append(
+                {
+                    "category": "claim",
+                    "item_id": confirmation_id,
+                    "value": {
+                        "kind": item["kind"],
+                        "evidence_status": item["evidence_status"],
+                        "statement_force": item["statement_force"],
+                    },
+                    "basis": item["source_ref"] or "user_input",
+                }
+            )
 
     material_review = decision["material_set_review"]
     material_inventory = [
@@ -720,6 +762,70 @@ def build_writing_preparation_sheet(decision, view, claims):
     ]
     if material_review["mode"] == "material_set":
         material_inventory.extend(material_review["materials"])
+        for material in material_review["materials"]:
+            confirmed_information.append(
+                {
+                    "category": "material",
+                    "item_id": "material:{}".format(
+                        material["material_id"]
+                    ),
+                    "value": {
+                        "version": material["version"],
+                        "material_subtype": material[
+                            "material_subtype"
+                        ],
+                        "status": material["status"],
+                    },
+                    "basis": "material_set_input",
+                }
+            )
+        for relationship in material_review["relationships"]:
+            if relationship["relation_type"] in {
+                "conflicts_with",
+                "unclear",
+            }:
+                continue
+            confirmed_information.append(
+                {
+                    "category": "relationship",
+                    "item_id": "material_relation:{}".format(
+                        relationship["relation_id"]
+                    ),
+                    "value": relationship["relation_type"],
+                    "basis": relationship["basis"],
+                }
+            )
+        for control_material in material_review["control_materials"]:
+            confirmed_information.append(
+                {
+                    "category": "control_material",
+                    "item_id": "control_material:{}".format(
+                        control_material["material_id"]
+                    ),
+                    "value": control_material["material_id"],
+                    "basis": control_material["control_bases"],
+                }
+            )
+
+    for dimension in (
+        "business_domain",
+        "lifecycle_position",
+        "document_scene",
+        "material_subtype",
+    ):
+        classification_value = decision[dimension]
+        if (
+            classification_value["value"] != "unknown"
+            and classification_value["confidence"] == "explicit"
+        ):
+            confirmed_information.append(
+                {
+                    "category": "perception",
+                    "item_id": dimension,
+                    "value": classification_value["value"],
+                    "basis": "explicit_signal",
+                }
+            )
 
     claim_source_refs = []
     for claim in claims:
@@ -727,18 +833,39 @@ def build_writing_preparation_sheet(decision, view, claims):
         if source_ref and source_ref not in claim_source_refs:
             claim_source_refs.append(source_ref)
 
-    confirmed_fields = [
-        {
-            "field": "task_mode",
-            "value": decision["task_mode"],
-            "basis": "user_input",
-        },
-        {
-            "field": "material_view.source_id",
-            "value": view["source_id"],
-            "basis": "user_input",
-        },
-    ]
+    confirmation_categories = {
+        "business_domain": "perception",
+        "lifecycle_position": "perception",
+        "document_scene": "perception",
+        "material_subtype": "perception",
+        "task_mode_support": "task",
+    }
+    requires_user_confirmation = []
+    for item_id in pending_confirmations:
+        prefix = item_id.split(":", 1)[0]
+        if item_id in confirmation_categories:
+            category = confirmation_categories[item_id]
+        elif prefix in {
+            "claim",
+            "evidence",
+            "evidence_force",
+            "statement_force",
+        }:
+            category = "claim"
+        elif prefix == "material_relation":
+            category = "relationship"
+        elif prefix == "material_conflict":
+            category = "conflict"
+        else:
+            category = "material_set"
+        requires_user_confirmation.append(
+            {
+                "category": category,
+                "item_id": item_id,
+                "basis": confirmation_bases[item_id],
+            }
+        )
+
     return {
         "schema_version": SCHEMA_VERSION,
         "current_stage": "preparation",
@@ -757,14 +884,10 @@ def build_writing_preparation_sheet(decision, view, claims):
         "facts_and_judgments": facts_and_judgments,
         "assumptions": assumptions,
         "conflicts": material_review["conflicts"],
-        "pending_confirmations": list(
-            decision["pending_confirmations"]
-        ),
+        "pending_confirmations": pending_confirmations,
         "confirmation_boundary": {
-            "confirmed": confirmed_fields,
-            "requires_user_confirmation": list(
-                decision["pending_confirmations"]
-            ),
+            "confirmed": confirmed_information,
+            "requires_user_confirmation": requires_user_confirmation,
         },
         "traceability_summary": {
             "source_ids": [view["source_id"]]
@@ -813,9 +936,9 @@ def build_explicit_preliminary_design_decision(task):
         if quick_task
         else "conservative_audit",
         "load_contracts": (
-            ARCHITECTURE_DESIGN_CONTRACTS
+            list(ARCHITECTURE_DESIGN_CONTRACTS)
             if supports_bounded_task
-            else COMMON_CONTRACTS
+            else list(COMMON_CONTRACTS)
         ),
         "pending_confirmations": (
             [] if supports_bounded_task else ["task_mode_support"]
@@ -869,7 +992,7 @@ def build_unclear_decision(task, text):
         "task_mode": task["mode"],
         "support_level": "recognition_coverage",
         "processing_mode": "conservative_audit",
-        "load_contracts": COMMON_CONTRACTS,
+        "load_contracts": list(COMMON_CONTRACTS),
         "pending_confirmations": pending,
         "blockers": [],
     }
@@ -916,10 +1039,13 @@ def build_perception_decision(request):
         decision["blockers"].extend(material_blockers)
     else:
         decision["material_set_review"] = build_single_material_review()
-    if (
+    complete_plan_creation = (
         task["mode"] == "create"
         and task["scope"] == "document"
-    ) or material_set is not None:
+        and decision["material_subtype"]["value"]
+        == "preliminary_design"
+    )
+    if complete_plan_creation or material_set is not None:
         decision["processing_mode"] = "two_stage"
         decision["load_contracts"].append(
             "common.writing_preparation"

@@ -103,7 +103,7 @@ cp -R yangqi-tech-writing/references yangqi-tech-writing/scripts "$CODEX_HOME/sk
 
 材料集关系支持 `governs`、`derives_from`、`supersedes`、`implements`、`verifies`、`conflicts_with` 和 `unclear`。控制与替代只采用批准、签署、用户指定或明确关系，不按文件日期自动覆盖；范围、数量、参数、责任、时间、结论和陈述效力冲突形成阻断项。单材料或上游缺失时会明确标记无法验证跨阶段一致性，不声称联审完成。该兼容切片不表示任何材料组合已经获得联审支持。
 
-完整文档新建和提供 `material_set` 的多材料整合任务使用 `two_stage`：第一阶段输出可确认的写作准备单，列出材料、关系、感知维度、控制性材料、事实与判断、假设、冲突、待确认项、追溯摘要和拟加载合同；确认后才进入成稿阶段。明确的局部改写、审阅和只标问题任务可以使用 `quick_path`，但出现待确认项或阻断项时降级为 `conservative_audit`。快速通道仍执行保护项、证据、陈述效力和 H1—H6。完整合同见[写作准备单与快速通道](references/writing-preparation.md)。
+已识别的完整方案新建和提供 `material_set` 的多材料整合任务使用 `two_stage`：第一阶段输出可确认的写作准备单，列出材料、关系、感知维度、控制性材料、事实与判断、假设、冲突、待确认项、追溯摘要和拟加载合同；确认后才进入成稿阶段。当前确定性切片只对明确的初步设计完整新建作该判断，不把文种不明的普通文档新建一并升级。明确的局部改写、审阅和只标问题任务可以使用 `quick_path`，但出现待确认项或阻断项时降级为 `conservative_audit`。快速通道仍执行保护项、证据、陈述效力和 H1—H6。完整合同见[写作准备单与快速通道](references/writing-preparation.md)。
 
 材料标准化视图必须保留 `source_id`、材料状态和至少一个原文定位，并明确标记 `is_formal_material: false`。它是专业文档工具生成的派生输入，不是新的正式材料。输入不足时，决策保留 `unknown`、`unclear` 及带依据的候选分类。
 

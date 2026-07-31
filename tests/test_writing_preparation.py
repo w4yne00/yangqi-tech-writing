@@ -5,6 +5,8 @@ import subprocess
 import sys
 import unittest
 
+from scripts.perception_decision import build_perception_decision
+
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts/perception_decision.py"
@@ -101,7 +103,12 @@ class WritingPreparationTests(unittest.TestCase):
         )
         self.assertIn(
             "evidence:F07-ASSUMPTION-001",
-            sheet["confirmation_boundary"]["requires_user_confirmation"],
+            [
+                item["item_id"]
+                for item in sheet["confirmation_boundary"][
+                    "requires_user_confirmation"
+                ]
+            ],
         )
         self.assertEqual(
             decision["load_contracts"],
@@ -228,6 +235,102 @@ class WritingPreparationTests(unittest.TestCase):
             decision["blockers"],
         )
         self.assertNotIn("writing_preparation_sheet", decision)
+
+    def test_two_stage_contract_does_not_leak_into_a_later_non_two_stage_task(self):
+        create_request = deepcopy(self.fixture["cases"][0]["request"])
+        create_request["task"] = {
+            "instruction": "新建一份完整的初步设计说明书。",
+            "mode": "create",
+            "scope": "document",
+        }
+        later_request = deepcopy(self.fixture["cases"][1]["request"])
+
+        create_decision = build_perception_decision(
+            create_request
+        )["decision"]
+        later_decision = build_perception_decision(
+            later_request
+        )["decision"]
+
+        self.assertIn(
+            "common.writing_preparation",
+            create_decision["load_contracts"],
+        )
+        self.assertNotIn(
+            "common.writing_preparation",
+            later_decision["load_contracts"],
+        )
+
+    def test_unrecognized_document_creation_is_not_forced_into_two_stage(self):
+        request = deepcopy(self.fixture["cases"][1]["request"])
+        request["task"] = {
+            "instruction": "新建一份完整会议纪要。",
+            "mode": "create",
+            "scope": "document",
+        }
+        request["material_view"]["title"] = "会议记录"
+        request["material_view"]["segments"][0]["text"] = "记录会议讨论事项。"
+
+        decision = self.run_decision(request)
+
+        self.assertEqual(
+            "conservative_audit",
+            decision["processing_mode"],
+        )
+        self.assertNotIn("writing_preparation_sheet", decision)
+
+    def test_every_unconfirmed_claim_is_exposed_in_confirmation_boundary(self):
+        request = deepcopy(self.fixture["cases"][0]["request"])
+        request["task"] = {
+            "instruction": "新建一份完整的初步设计说明书。",
+            "mode": "create",
+            "scope": "document",
+        }
+        request["claims"] = [
+            {
+                "claim_id": "F07-UNSUPPORTED-JUDGMENT",
+                "text": "建议采用双节点部署方案。",
+                "evidence_status": "UNSUPPORTED",
+                "statement_force": "recommended_solution",
+            },
+            {
+                "claim_id": "F07-SUPPORTED-FACT",
+                "text": "本期建设范围包括集团总部。",
+                "evidence_status": "SUPPORTED",
+                "statement_force": "approved_boundary",
+                "source_ref": "批复文件第3条",
+            }
+        ]
+
+        sheet = self.run_decision(request)["writing_preparation_sheet"]
+
+        self.assertIn(
+            "claim:F07-UNSUPPORTED-JUDGMENT",
+            sheet["pending_confirmations"],
+        )
+        confirmation_items = {
+            item["item_id"]: item
+            for item in sheet["confirmation_boundary"][
+                "requires_user_confirmation"
+            ]
+        }
+        self.assertEqual(
+            "claim",
+            confirmation_items[
+                "claim:F07-UNSUPPORTED-JUDGMENT"
+            ]["category"],
+        )
+        confirmed_categories = {
+            item["category"]
+            for item in sheet["confirmation_boundary"]["confirmed"]
+        }
+        for category in (
+            "task",
+            "material",
+            "perception",
+            "claim",
+        ):
+            self.assertIn(category, confirmed_categories)
 
 
 if __name__ == "__main__":
