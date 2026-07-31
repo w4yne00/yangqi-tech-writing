@@ -662,11 +662,143 @@ def apply_claim_boundaries(decision, claims):
     return decision
 
 
+def build_writing_preparation_sheet(decision, view, claims):
+    facts_and_judgments = {
+        "confirmed": [],
+        "requires_user_confirmation": [],
+    }
+    assumptions = {
+        "confirmed": [],
+        "requires_user_confirmation": [],
+    }
+    claim_decisions = {
+        item["claim_id"]: item
+        for item in decision["claim_decisions"]
+    }
+    for claim in claims:
+        claim_decision = claim_decisions[claim["claim_id"]]
+        requires_confirmation = (
+            claim_decision["action"]
+            not in {"preserve", "preserve_source_force"}
+        )
+        item = {
+            "claim_id": claim["claim_id"],
+            "text": claim["text"],
+            "evidence_status": claim["evidence_status"],
+            "statement_force": claim_decision["allowed_statement_force"],
+            "source_ref": claim["source_ref"],
+        }
+        if claim_decision["allowed_statement_force"] == "assumption":
+            item["kind"] = "assumption"
+        elif claim_decision["allowed_statement_force"] in {
+            "professional_judgment",
+            "recommended_solution",
+        }:
+            item["kind"] = "judgment"
+        else:
+            item["kind"] = "fact"
+        bucket = (
+            assumptions
+            if claim_decision["allowed_statement_force"] == "assumption"
+            else facts_and_judgments
+        )
+        status = (
+            "requires_user_confirmation"
+            if requires_confirmation
+            else "confirmed"
+        )
+        bucket[status].append(item)
+
+    material_review = decision["material_set_review"]
+    material_inventory = [
+        {
+            "source_id": view["source_id"],
+            "material_status": view["material_status"],
+            "is_formal_material": False,
+            "view_role": "derived_normalized_view",
+        }
+    ]
+    if material_review["mode"] == "material_set":
+        material_inventory.extend(material_review["materials"])
+
+    claim_source_refs = []
+    for claim in claims:
+        source_ref = claim["source_ref"]
+        if source_ref and source_ref not in claim_source_refs:
+            claim_source_refs.append(source_ref)
+
+    confirmed_fields = [
+        {
+            "field": "task_mode",
+            "value": decision["task_mode"],
+            "basis": "user_input",
+        },
+        {
+            "field": "material_view.source_id",
+            "value": view["source_id"],
+            "basis": "user_input",
+        },
+    ]
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "current_stage": "preparation",
+        "confirmation_required": True,
+        "next_stage": "draft_after_user_confirmation",
+        "material_inventory": material_inventory,
+        "material_relationships": material_review["relationships"],
+        "perception_dimensions": {
+            "business_domain": decision["business_domain"],
+            "lifecycle_position": decision["lifecycle_position"],
+            "document_scene": decision["document_scene"],
+            "material_subtype": decision["material_subtype"],
+            "task_mode": decision["task_mode"],
+        },
+        "control_materials": material_review["control_materials"],
+        "facts_and_judgments": facts_and_judgments,
+        "assumptions": assumptions,
+        "conflicts": material_review["conflicts"],
+        "pending_confirmations": list(
+            decision["pending_confirmations"]
+        ),
+        "confirmation_boundary": {
+            "confirmed": confirmed_fields,
+            "requires_user_confirmation": list(
+                decision["pending_confirmations"]
+            ),
+        },
+        "traceability_summary": {
+            "source_ids": [view["source_id"]]
+            + [
+                material["material_id"]
+                for material in material_review.get("materials", [])
+            ],
+            "claim_source_refs": claim_source_refs,
+            "relationship_ids": [
+                relationship["relation_id"]
+                for relationship in material_review["relationships"]
+            ],
+            "untraced_claim_ids": [
+                claim["claim_id"]
+                for claim in claims
+                if not claim["source_ref"]
+            ],
+        },
+        "proposed_contracts": list(decision["load_contracts"]),
+        "blockers": list(decision["blockers"]),
+    }
+
+
 def build_explicit_preliminary_design_decision(task):
-    supports_review = task["mode"] in {"review", "annotation"}
-    quick_review = supports_review and task["scope"] == "local"
+    supports_bounded_task = task["mode"] in {
+        "rewrite",
+        "review",
+        "annotation",
+    }
+    quick_task = supports_bounded_task and task["scope"] == "local"
     support_level = (
-        "basic_support" if supports_review else "recognition_coverage"
+        "basic_support"
+        if supports_bounded_task
+        else "recognition_coverage"
     )
     return {
         "business_domain": classification(
@@ -677,14 +809,16 @@ def build_explicit_preliminary_design_decision(task):
         "material_subtype": classification("preliminary_design", "explicit"),
         "task_mode": task["mode"],
         "support_level": support_level,
-        "processing_mode": "quick_path" if quick_review else "conservative_audit",
+        "processing_mode": "quick_path"
+        if quick_task
+        else "conservative_audit",
         "load_contracts": (
             ARCHITECTURE_DESIGN_CONTRACTS
-            if supports_review
+            if supports_bounded_task
             else COMMON_CONTRACTS
         ),
         "pending_confirmations": (
-            [] if supports_review else ["task_mode_support"]
+            [] if supports_bounded_task else ["task_mode_support"]
         ),
         "blockers": [],
     }
@@ -761,6 +895,14 @@ def build_perception_decision(request):
     else:
         decision = build_unclear_decision(task, text)
     decision = apply_claim_boundaries(decision, claims)
+    if (
+        decision["processing_mode"] == "quick_path"
+        and (
+            decision["pending_confirmations"]
+            or decision["blockers"]
+        )
+    ):
+        decision["processing_mode"] = "conservative_audit"
     if material_set is not None:
         decision["processing_mode"] = "conservative_audit"
         decision["load_contracts"] = decision["load_contracts"] + [
@@ -774,6 +916,17 @@ def build_perception_decision(request):
         decision["blockers"].extend(material_blockers)
     else:
         decision["material_set_review"] = build_single_material_review()
+    if (
+        task["mode"] == "create"
+        and task["scope"] == "document"
+    ) or material_set is not None:
+        decision["processing_mode"] = "two_stage"
+        decision["load_contracts"].append(
+            "common.writing_preparation"
+        )
+        decision["writing_preparation_sheet"] = (
+            build_writing_preparation_sheet(decision, view, claims)
+        )
 
     return {
         "schema_version": SCHEMA_VERSION,

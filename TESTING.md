@@ -1,6 +1,6 @@
 # Testing
 
-验证日期：2026-07-30；稳定版本：`1.1.0`。
+验证日期：2026-07-31；稳定版本：`1.1.0`。
 
 ## Environment
 
@@ -36,6 +36,9 @@ python3 "$HOME/.agents/skills/skill-creator/scripts/quick_validate.py" .
 
 ## Results
 
+- Foundation 07 当前根目录完整单元测试为 139 项通过、0 项失败；最高层感知入口、Skill 结构和新增写作准备单合同均通过。
+- Foundation 07 新增 4 项外部行为测试：完整文档新建和多材料整合进入 `two_stage`，准备单覆盖材料、关系、感知维度、控制依据、事实与判断、假设、冲突、确认边界、追溯摘要和拟加载合同；边界明确的局部改写、审阅和只标问题进入 `quick_path`。
+- 局部任务存在无来源高效力陈述、待确认项或阻断项时降级为 `conservative_audit`。快速通道继续加载保护项、证据、陈述效力和 H1—H6，不改变任务模式或 Annotation mode 输出边界。测试复用带 `deterministic-synthetic-fixture`、`model_execution: false` 声明的合成输入，不构成真实模型表现证据。
 - Foundation 11 当前根目录完整单元测试为 134 项通过、0 项失败；材料合同模板、登记夹具、产品 JSON、Skill 结构、Markdown 链接、版本和公开文本脱敏检查均通过。
 - Foundation 11 新增 19 项材料合同与样本登记外部行为测试，覆盖有效基础登记、模板完整性、合同或样本元数据缺失、结构化陈述效力跃迁、授权状态与用途范围、评审状态、未脱敏样本、项目受限用途、禁止持久化信息、正式要求身份、合成证据标记、前向模型执行状态以及错误深度/联审声明。
 - 分发模板和测试夹具固定为 `basic_support`，其中的占位合成样本标记为 `deterministic-synthetic-fixture`、`model_execution: false`，不会被计入正式要求或真实案例，也不表示任何具体材料已经获得深度支持、联审支持或前向验证。

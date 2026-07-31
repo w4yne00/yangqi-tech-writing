@@ -24,7 +24,9 @@
 - 明确信号使用 `explicit`；信息不足时使用 `unknown` 值和 `unclear` 置信状态，并在候选项中记录依据。
 - 任务模式保持用户授权，不因材料分类改变。
 - 支持级别只声明 `recognition_coverage` 或 `basic_support`。最小切片不声明深度支持、联审支持或前向验证。
-- 处理模式可以是 `quick_path` 或 `conservative_audit`。快速通道仍执行保护项、证据和 H1—H6。
+- 处理模式可以是 `quick_path`、`two_stage` 或 `conservative_audit`。完整方案新建和多材料整合使用 `two_stage`；材料身份明确、范围为 `local` 且没有待确认项或阻断项的局部改写、审阅和只标问题任务可以使用 `quick_path`。
+- `two_stage` 输出 `writing_preparation_sheet`，包含材料清单与关系、感知维度、控制性材料、事实与判断、假设、冲突、待确认项、确认边界、追溯摘要和拟加载合同。完整字段和阶段边界见[写作准备单与快速通道](writing-preparation.md)。
+- 快速通道仍执行保护项、证据、陈述效力和 H1—H6；局部任务一旦存在无来源高效力陈述、证据冲突、效力不明或其他待确认/阻断项，就降级为 `conservative_audit`。
 - `claim_decisions` 逐项输出证据状态、来源效力、请求效力、允许效力和处理动作，保持证据状态与陈述效力正交。
 - `material_set_review` 输出单材料或材料集模式、材料元数据、七类显式关系、控制依据、冲突、跨阶段可核验状态和完成声明。
 - 材料集只按明确关系确定控制与替代线索，不按日期自动形成 `supersedes`；批准、签署、用户指定和 `governs` 可以作为可审查的控制依据。
@@ -42,9 +44,9 @@
 4. `scene.architecture_design`
 5. `common.quality_gate_h1_h6`
 
-当前切片只对明确的初步设计 `review` 或 `annotation` 声明基础支持。其他任务模式即使材料分类明确，也只声明识别覆盖并进入保守审阅，等待后续合同扩展。
+当前切片对明确、局部且边界清楚的初步设计 `rewrite`、`review` 或 `annotation` 声明基础支持并允许快速通道。完整文档 `create` 只声明识别覆盖并进入两阶段处理，等待用户确认和后续合同扩展。
 
-提供 `material_set` 时固定进入 `conservative_audit` 并加载 `common.material_set_review`。`reviewable` 只表示输入可进入人工联审，不表示已经获得联审支持、完成一致性验证或可以定稿。
+提供 `material_set` 时固定进入 `two_stage`，加载 `common.material_set_review` 和 `common.writing_preparation`，先形成写作准备单。`reviewable` 只表示输入可进入人工联审，不表示已经获得联审支持、完成一致性验证或可以定稿。
 
 缺少足够信号、信号被明确否定或相互冲突时，只加载共性保护、证据、陈述效力和质量合同，进入保守审阅；不得为了获得确定分类而补造业务域、生命周期或材料子类型。
 

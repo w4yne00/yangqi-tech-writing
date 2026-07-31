@@ -167,7 +167,8 @@ class PerceptionDecisionTests(unittest.TestCase):
             "engineering_construction", decision["business_domain"]["value"]
         )
         self.assertEqual("recognition_coverage", decision["support_level"])
-        self.assertEqual("conservative_audit", decision["processing_mode"])
+        self.assertEqual("two_stage", decision["processing_mode"])
+        self.assertIn("writing_preparation_sheet", decision)
         self.assertIn("task_mode_support", decision["pending_confirmations"])
 
     def test_negated_preliminary_design_signal_stays_unclear(self):
@@ -217,9 +218,10 @@ class PerceptionDecisionTests(unittest.TestCase):
         review = decision["material_set_review"]
         self.assertEqual("material_set", review["mode"])
         self.assertEqual(
-            "conservative_audit",
+            "two_stage",
             decision["processing_mode"],
         )
+        self.assertIn("writing_preparation_sheet", decision)
         self.assertIn(
             "common.material_set_review",
             decision["load_contracts"],

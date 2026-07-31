@@ -6,6 +6,33 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class ReferenceContractTests(unittest.TestCase):
+    def test_writing_preparation_contract_separates_two_stage_and_quick_path(self):
+        text = (ROOT / "references/writing-preparation.md").read_text(
+            encoding="utf-8"
+        )
+        for phrase in [
+            "`two_stage`",
+            "`quick_path`",
+            "材料清单",
+            "材料关系",
+            "感知维度",
+            "控制性材料",
+            "事实与判断",
+            "假设",
+            "冲突",
+            "待确认项",
+            "追溯摘要",
+            "拟加载合同",
+            "已确认",
+            "需要用户确认",
+            "不输出隐藏推理",
+            "保护项",
+            "证据状态",
+            "陈述效力",
+            "H1—H6",
+        ]:
+            self.assertIn(phrase, text)
+
     def test_material_contract_registry_defines_evidence_and_privacy_gates(self):
         text = (ROOT / "references/material-contract-evidence.md").read_text(
             encoding="utf-8"

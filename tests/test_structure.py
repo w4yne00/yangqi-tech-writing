@@ -19,6 +19,7 @@ REQUIRED_FILES = [
     "references/evidence-policy.md",
     "references/statement-force-policy.md",
     "references/material-set-review.md",
+    "references/writing-preparation.md",
     "references/project-context.md",
     "references/material-contract-evidence.md",
     "references/ai-trace-patterns.md",
