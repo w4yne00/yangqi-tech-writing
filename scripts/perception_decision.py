@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build the minimum observable perception decision for a material task."""
+"""Build the observable perception decision for a material task."""
 
 import argparse
 import json
@@ -19,22 +19,167 @@ QUALITY_CONTRACTS = [
     "common.quality_gate_h1_h6",
 ]
 COMMON_CONTRACTS = CONTENT_CONTRACTS + QUALITY_CONTRACTS
-ARCHITECTURE_DESIGN_CONTRACTS = (
-    CONTENT_CONTRACTS + ["scene.architecture_design"] + QUALITY_CONTRACTS
-)
-
 PRELIMINARY_DESIGN_SIGNALS = ("初步设计", "初设")
-NEGATED_PRELIMINARY_DESIGN_PATTERNS = (
+ENGINEERING_MATERIAL_ROUTES = (
+    {
+        "signals": ("项目建议书",),
+        "lifecycle_position": "initiation",
+        "document_scene": "feasibility_study",
+        "material_subtype": "project_proposal",
+    },
+    {
+        "signals": ("可行性研究报告", "工程可研报告", "可研报告"),
+        "lifecycle_position": "initiation",
+        "document_scene": "feasibility_study",
+        "material_subtype": "feasibility_study",
+    },
+    {
+        "signals": PRELIMINARY_DESIGN_SIGNALS,
+        "lifecycle_position": "design",
+        "document_scene": "architecture_design",
+        "material_subtype": "preliminary_design",
+    },
+    {
+        "signals": ("详细设计", "详设"),
+        "lifecycle_position": "design",
+        "document_scene": "architecture_design",
+        "material_subtype": "detailed_design",
+    },
+    {
+        "signals": ("总体架构设计", "总体架构"),
+        "lifecycle_position": "design",
+        "document_scene": "architecture_design",
+        "material_subtype": "overall_architecture",
+    },
+    {
+        "signals": ("技术规范书", "招标技术要求", "采购技术要求"),
+        "lifecycle_position": "procurement",
+        "document_scene": "technical_spec",
+        "material_subtype": "technical_specification",
+    },
+    {
+        "signals": ("投标技术应答", "投标应答", "技术应答文件"),
+        "lifecycle_position": "procurement",
+        "document_scene": "bid_response",
+        "material_subtype": "bid_response",
+    },
+    {
+        "signals": ("工程实施方案",),
+        "lifecycle_position": "implementation",
+        "document_scene": "architecture_design",
+        "material_subtype": "engineering_implementation_plan",
+    },
+    {
+        "signals": ("工程实施记录",),
+        "lifecycle_position": "implementation",
+        "document_scene": "review_acceptance",
+        "material_subtype": "implementation_record",
+    },
+    {
+        "signals": (
+            "工程建设阶段汇报",
+            "工程阶段汇报",
+            "项目实施阶段汇报",
+        ),
+        "lifecycle_position": "implementation",
+        "document_scene": "presentation",
+        "material_subtype": "stage_report",
+    },
+    {
+        "signals": ("工程试运行报告", "试运行报告"),
+        "lifecycle_position": "trial_run",
+        "document_scene": "review_acceptance",
+        "material_subtype": "trial_run_report",
+    },
+    {
+        "signals": ("工程运行维护报告", "工程运营报告"),
+        "lifecycle_position": "operation",
+        "document_scene": "presentation",
+        "material_subtype": "operation_report",
+    },
+    {
+        "signals": ("工程验收大纲",),
+        "lifecycle_position": "acceptance",
+        "document_scene": "review_acceptance",
+        "material_subtype": "acceptance_outline",
+    },
+    {
+        "signals": ("工程验收报告",),
+        "lifecycle_position": "acceptance",
+        "document_scene": "review_acceptance",
+        "material_subtype": "acceptance_report",
+    },
+)
+RESEARCH_CONTEXT_PATTERN = r"(?:科研(?:课题)?|课题)"
+NEGATED_RESEARCH_CONTEXT_PATTERNS = (
     re.compile(
         r"(?:不是|不属于|并非|不能认定为|不应认定为|不能视为|"
-        r"尚未确认为|未确认为|非)\s*(?:初步设计|初设)"
-    ),
-    re.compile(
-        r"(?:初步设计|初设)\s*(?:的)?\s*"
-        r"(?:材料|文种|类型|子类型|分类)?\s*"
-        r"(?:尚未确认|未确认|待确认|尚不明确|不明确)"
+        r"尚未确认为|未确认为|非)\s*"
+        + RESEARCH_CONTEXT_PATTERN
+        + r"(?:材料|项目|语境)?"
     ),
 )
+RESEARCH_QUALIFIED_MATERIAL_SIGNALS = tuple(
+    dict.fromkeys(
+        signal
+        for route in ENGINEERING_MATERIAL_ROUTES
+        for signal in route["signals"]
+    )
+) + ("验收大纲", "验收报告", "阶段汇报", "实施方案")
+RESEARCH_QUALIFIED_MATERIAL_PATTERN = "|".join(
+    re.escape(signal)
+    for signal in sorted(
+        RESEARCH_QUALIFIED_MATERIAL_SIGNALS, key=len, reverse=True
+    )
+)
+RESEARCH_AFFILIATION_PATTERNS = (
+    re.compile(
+        r"(?:本|该|此)?(?:材料|文件|报告|项目|任务|工作)\s*"
+        r"(?:属于|归属于|定位为|认定为|确认为|是|为)\s*"
+        r"(?:某|本|该)?"
+        + RESEARCH_CONTEXT_PATTERN
+        + r"(?:材料|项目|语境)?"
+    ),
+    re.compile(
+        RESEARCH_CONTEXT_PATTERN + r"(?:材料|语境)"
+    ),
+    re.compile(
+        RESEARCH_CONTEXT_PATTERN
+        + r"(?:项目)?(?:研究实施方案|"
+        r"(?:开题|中期|年度|结题)阶段汇报)"
+    ),
+    re.compile(
+        RESEARCH_CONTEXT_PATTERN
+        + r"(?:项目)?(?:的)?(?:"
+        + RESEARCH_QUALIFIED_MATERIAL_PATTERN
+        + r")"
+    ),
+)
+MATERIAL_SUBTYPE_NEGATION_ALIASES = {
+    "project_proposal": ("工程立项材料",),
+    "feasibility_study": ("工程立项材料",),
+    "technical_specification": ("工程采购材料",),
+    "bid_response": ("工程采购材料",),
+    "engineering_implementation_plan": ("实施方案",),
+    "implementation_record": ("实施记录",),
+    "stage_report": ("阶段汇报",),
+    "trial_run_report": ("工程试运行材料", "试运行材料"),
+    "acceptance_outline": ("项目验收大纲", "验收大纲"),
+    "acceptance_report": ("项目验收报告", "验收报告"),
+    "operation_report": (
+        "工程运营材料",
+        "工程运行维护材料",
+        "运营材料",
+    ),
+}
+SCENE_CONTRACTS = {
+    "architecture_design": "scene.architecture_design",
+    "bid_response": "scene.bid_response",
+    "feasibility_study": "scene.feasibility_study",
+    "presentation": "scene.presentation",
+    "review_acceptance": "scene.review_acceptance",
+    "technical_spec": "scene.technical_spec",
+}
 DESIGN_SIGNALS = ("设计",)
 EVIDENCE_STATUSES = {
     "SUPPORTED",
@@ -103,11 +248,94 @@ def candidate(value, basis):
     return {"value": value, "basis": basis}
 
 
-def has_negated_preliminary_design_signal(text):
-    return any(
-        pattern.search(text)
-        for pattern in NEGATED_PRELIMINARY_DESIGN_PATTERNS
+def has_negated_material_signal(text, signals):
+    signal_pattern = "|".join(
+        re.escape(signal) for signal in sorted(signals, key=len, reverse=True)
     )
+    patterns = (
+        re.compile(
+            r"(?:不是|不属于|并非|不能认定为|不应认定为|不能视为|"
+            r"尚未确认为|未确认为|非)\s*(?:{})".format(signal_pattern)
+        ),
+        re.compile(
+            r"(?:{})\s*(?:的)?\s*"
+            r"(?:材料|文种|类型|子类型|分类)?\s*"
+            r"(?:尚未确认|未确认|待确认|尚不明确|不明确)".format(
+                signal_pattern
+            )
+        ),
+    )
+    return any(pattern.search(text) for pattern in patterns)
+
+
+def has_active_research_context(text):
+    remaining_text = text
+    for pattern in NEGATED_RESEARCH_CONTEXT_PATTERNS:
+        remaining_text = pattern.sub("", remaining_text)
+    return any(
+        pattern.search(remaining_text)
+        for pattern in RESEARCH_AFFILIATION_PATTERNS
+    )
+
+
+def matching_engineering_routes(text):
+    if has_active_research_context(text):
+        return []
+    return [
+        route
+        for route in ENGINEERING_MATERIAL_ROUTES
+        if any(signal in text for signal in route["signals"])
+        and not has_negated_material_signal(text, route["signals"])
+    ]
+
+
+def resolve_engineering_identity_routes(task, view):
+    """Resolve material identity before considering lower-priority references."""
+    material_context = "\n".join(
+        [task["instruction"], view["searchable_text"]]
+    )
+    if has_active_research_context(material_context):
+        return []
+
+    title_routes = matching_engineering_routes(view["title"])
+    if title_routes:
+        remaining_title_routes = [
+            route
+            for route in title_routes
+            if not has_negated_material_signal(
+                task["instruction"], route["signals"]
+            )
+        ]
+        if remaining_title_routes:
+            return remaining_title_routes
+        return matching_engineering_routes(task["instruction"])
+
+    for text in (task["instruction"], view["searchable_text"]):
+        routes = matching_engineering_routes(text)
+        if routes:
+            return routes
+    return []
+
+
+def unique_candidates(items):
+    unique = []
+    values = set()
+    for item in items:
+        if item["value"] not in values:
+            unique.append(item)
+            values.add(item["value"])
+    return unique
+
+
+def is_material_subtype_negated(text, material_subtype):
+    signals = []
+    for route in ENGINEERING_MATERIAL_ROUTES:
+        if route["material_subtype"] == material_subtype:
+            signals.extend(route["signals"])
+    signals.extend(
+        MATERIAL_SUBTYPE_NEGATION_ALIASES.get(material_subtype, ())
+    )
+    return bool(signals) and has_negated_material_signal(text, signals)
 
 
 def require_mapping(value, field):
@@ -142,7 +370,7 @@ def validate_material_view(raw_view):
     if not isinstance(segments, list) or not segments:
         raise RequestError("material_view.segments 必须至少包含一个定位片段")
 
-    texts = [title]
+    texts = []
     locator = None
     for index, segment in enumerate(segments):
         segment = require_mapping(
@@ -911,7 +1139,7 @@ def build_writing_preparation_sheet(decision, view, claims):
     }
 
 
-def build_explicit_preliminary_design_decision(task):
+def build_explicit_engineering_decision(task, route):
     supports_bounded_task = task["mode"] in {
         "rewrite",
         "review",
@@ -927,16 +1155,24 @@ def build_explicit_preliminary_design_decision(task):
         "business_domain": classification(
             "engineering_construction", "explicit"
         ),
-        "lifecycle_position": classification("design", "explicit"),
-        "document_scene": classification("architecture_design", "explicit"),
-        "material_subtype": classification("preliminary_design", "explicit"),
+        "lifecycle_position": classification(
+            route["lifecycle_position"], "explicit"
+        ),
+        "document_scene": classification(
+            route["document_scene"], "explicit"
+        ),
+        "material_subtype": classification(
+            route["material_subtype"], "explicit"
+        ),
         "task_mode": task["mode"],
         "support_level": support_level,
         "processing_mode": "quick_path"
         if quick_task
         else "conservative_audit",
         "load_contracts": (
-            list(ARCHITECTURE_DESIGN_CONTRACTS)
+            CONTENT_CONTRACTS
+            + [SCENE_CONTRACTS[route["document_scene"]]]
+            + QUALITY_CONTRACTS
             if supports_bounded_task
             else list(COMMON_CONTRACTS)
         ),
@@ -948,10 +1184,60 @@ def build_explicit_preliminary_design_decision(task):
 
 
 def build_unclear_decision(task, text):
-    has_design_signal = any(signal in text for signal in DESIGN_SIGNALS)
+    allows_engineering_candidates = not has_active_research_context(text)
+    has_design_signal = allows_engineering_candidates and any(
+        signal in text for signal in DESIGN_SIGNALS
+    )
+    has_engineering_acceptance_signal = (
+        allows_engineering_candidates
+        and "验收" in text
+        and "工程" in text
+    )
+    has_ambiguous_project_acceptance_signal = (
+        allows_engineering_candidates
+        and "验收" in text
+        and "项目" in text
+    )
+    has_generic_implementation_plan_signal = (
+        allows_engineering_candidates
+        and "实施方案" in text
+        and "工程实施方案" not in text
+    )
+    has_generic_stage_report_signal = (
+        allows_engineering_candidates
+        and "阶段汇报" in text
+        and not any(
+            signal in text
+            for signal in (
+                "工程建设阶段汇报",
+                "工程阶段汇报",
+                "项目实施阶段汇报",
+            )
+        )
+    )
+    has_engineering_implementation_material_signal = (
+        allows_engineering_candidates and "工程实施材料" in text
+    )
+    has_engineering_initiation_material_signal = (
+        allows_engineering_candidates and "工程立项材料" in text
+    )
+    has_engineering_procurement_material_signal = (
+        allows_engineering_candidates and "工程采购材料" in text
+    )
+    has_engineering_trial_run_material_signal = (
+        allows_engineering_candidates and "工程试运行材料" in text
+    )
+    has_engineering_operation_material_signal = (
+        allows_engineering_candidates
+        and any(
+            signal in text
+            for signal in ("工程运营材料", "工程运行维护材料")
+        )
+    )
     domain_candidates = []
     lifecycle_candidates = []
     scene_candidates = []
+    material_subtype_candidates = []
     if has_design_signal:
         domain_candidates.append(
             candidate(
@@ -971,6 +1257,290 @@ def build_unclear_decision(task, text):
                 "材料可能适用架构设计场景，仍需确认具体文种。",
             )
         )
+        material_subtype_candidates.extend(
+            [
+                candidate(
+                    "preliminary_design",
+                    "设计信号不足以确认材料是否为初步设计。",
+                ),
+                candidate(
+                    "detailed_design",
+                    "设计信号不足以确认材料是否为详细设计。",
+                ),
+                candidate(
+                    "overall_architecture",
+                    "设计信号不足以确认材料是否为总体架构。",
+                ),
+            ]
+        )
+    if (
+        has_engineering_acceptance_signal
+        or has_ambiguous_project_acceptance_signal
+    ):
+        if has_ambiguous_project_acceptance_signal:
+            domain_basis = (
+                "项目验收信号不足以区分工程建设与科研课题语境。"
+            )
+        else:
+            domain_basis = "材料出现工程验收信号，但未明确具体验收文种。"
+        domain_candidates.append(
+            candidate(
+                "engineering_construction",
+                domain_basis,
+            )
+        )
+        lifecycle_candidates.append(
+            candidate(
+                "acceptance",
+                "材料出现工程验收信号，但未明确验收活动位置。",
+            )
+        )
+        scene_candidates.append(
+            candidate(
+                "review_acceptance",
+                "材料可能适用评审验收场景，仍需确认具体文种。",
+            )
+        )
+        if "验收大纲" in text:
+            material_subtype_candidates.append(
+                candidate(
+                    "acceptance_outline",
+                    "验收大纲名称已出现，但业务域仍待确认。",
+                )
+            )
+        elif "验收报告" in text:
+            material_subtype_candidates.append(
+                candidate(
+                    "acceptance_report",
+                    "验收报告名称已出现，但业务域仍待确认。",
+                )
+            )
+        else:
+            material_subtype_candidates.extend(
+                [
+                    candidate(
+                        "acceptance_outline",
+                        "验收信号不足以确认材料是否为验收大纲。",
+                    ),
+                    candidate(
+                        "acceptance_report",
+                        "验收信号不足以确认材料是否为验收报告。",
+                    ),
+                ]
+            )
+    if has_generic_implementation_plan_signal:
+        domain_candidates.append(
+            candidate(
+                "engineering_construction",
+                "实施方案可能属于工程建设，但也需排除科研课题语境。",
+            )
+        )
+        lifecycle_candidates.append(
+            candidate(
+                "implementation",
+                "实施方案可能处于工程实施位置，仍需确认业务域。",
+            )
+        )
+        scene_candidates.append(
+            candidate(
+                "architecture_design",
+                "实施方案可能适用架构设计基础场景，仍需确认材料身份。",
+            )
+        )
+        material_subtype_candidates.append(
+            candidate(
+                "engineering_implementation_plan",
+                "泛称实施方案不足以确认其为工程实施方案。",
+            )
+        )
+    if has_generic_stage_report_signal:
+        domain_candidates.append(
+            candidate(
+                "engineering_construction",
+                "阶段汇报可能属于工程建设，但也需排除科研或治理语境。",
+            )
+        )
+        lifecycle_candidates.append(
+            candidate(
+                "implementation",
+                "阶段汇报可能记录工程实施进展，仍需确认具体位置。",
+            )
+        )
+        scene_candidates.append(
+            candidate(
+                "presentation",
+                "阶段汇报具有汇报文种信号，但业务域仍待确认。",
+            )
+        )
+        material_subtype_candidates.append(
+            candidate(
+                "stage_report",
+                "泛称阶段汇报不足以确认其为工程建设阶段汇报。",
+            )
+        )
+    if has_engineering_implementation_material_signal:
+        domain_candidates.append(
+            candidate(
+                "engineering_construction",
+                "材料明确处于工程实施语境，但未说明具体文种。",
+            )
+        )
+        lifecycle_candidates.append(
+            candidate(
+                "implementation",
+                "工程实施信号支持实施位置候选，具体材料仍待确认。",
+            )
+        )
+        scene_candidates.extend(
+            [
+                candidate(
+                    "architecture_design",
+                    "工程实施材料可能是实施方案。",
+                ),
+                candidate(
+                    "review_acceptance",
+                    "工程实施材料可能是实施记录。",
+                ),
+            ]
+        )
+        material_subtype_candidates.extend(
+            [
+                candidate(
+                    "engineering_implementation_plan",
+                    "工程实施材料可能是实施方案。",
+                ),
+                candidate(
+                    "implementation_record",
+                    "工程实施材料可能是实施记录。",
+                ),
+            ]
+        )
+    if has_engineering_initiation_material_signal:
+        domain_candidates.append(
+            candidate(
+                "engineering_construction",
+                "材料明确处于工程立项语境，但未说明具体文种。",
+            )
+        )
+        lifecycle_candidates.append(
+            candidate(
+                "initiation",
+                "工程立项信号支持立项位置候选，具体材料仍待确认。",
+            )
+        )
+        scene_candidates.append(
+            candidate(
+                "feasibility_study",
+                "工程立项材料可能是项目建议书或可行性研究报告。",
+            )
+        )
+        material_subtype_candidates.extend(
+            [
+                candidate(
+                    "project_proposal",
+                    "工程立项材料可能是项目建议书。",
+                ),
+                candidate(
+                    "feasibility_study",
+                    "工程立项材料可能是可行性研究报告。",
+                ),
+            ]
+        )
+    if has_engineering_procurement_material_signal:
+        domain_candidates.append(
+            candidate(
+                "engineering_construction",
+                "材料明确处于工程采购语境，但未说明具体文种。",
+            )
+        )
+        lifecycle_candidates.append(
+            candidate(
+                "procurement",
+                "工程采购信号支持采购位置候选，具体材料仍待确认。",
+            )
+        )
+        scene_candidates.extend(
+            [
+                candidate(
+                    "technical_spec",
+                    "工程采购材料可能是技术规范书。",
+                ),
+                candidate(
+                    "bid_response",
+                    "工程采购材料可能是投标技术应答。",
+                ),
+            ]
+        )
+        material_subtype_candidates.extend(
+            [
+                candidate(
+                    "technical_specification",
+                    "工程采购材料可能是技术规范书。",
+                ),
+                candidate(
+                    "bid_response",
+                    "工程采购材料可能是投标技术应答。",
+                ),
+            ]
+        )
+    if has_engineering_trial_run_material_signal:
+        domain_candidates.append(
+            candidate(
+                "engineering_construction",
+                "材料明确处于工程试运行语境，但未说明具体文种。",
+            )
+        )
+        lifecycle_candidates.append(
+            candidate(
+                "trial_run",
+                "工程试运行信号支持试运行位置候选。",
+            )
+        )
+        scene_candidates.append(
+            candidate(
+                "review_acceptance",
+                "工程试运行材料可能是试运行报告。",
+            )
+        )
+        material_subtype_candidates.append(
+            candidate(
+                "trial_run_report",
+                "工程试运行材料可能是试运行报告。",
+            )
+        )
+    if has_engineering_operation_material_signal:
+        domain_candidates.append(
+            candidate(
+                "engineering_construction",
+                "材料明确处于工程运营语境，但未说明具体文种。",
+            )
+        )
+        lifecycle_candidates.append(
+            candidate(
+                "operation",
+                "工程运营信号支持运营位置候选。",
+            )
+        )
+        scene_candidates.append(
+            candidate(
+                "presentation",
+                "工程运营材料可能是运行维护或运营报告。",
+            )
+        )
+        material_subtype_candidates.append(
+            candidate(
+                "operation_report",
+                "工程运营材料可能是运行维护或运营报告。",
+            )
+        )
+
+    material_subtype_candidates = [
+        item
+        for item in material_subtype_candidates
+        if not is_material_subtype_negated(
+            task["instruction"], item["value"]
+        )
+    ]
 
     pending = [
         "business_domain",
@@ -980,15 +1550,19 @@ def build_unclear_decision(task, text):
     ]
     return {
         "business_domain": classification(
-            "unknown", "unclear", domain_candidates
+            "unknown", "unclear", unique_candidates(domain_candidates)
         ),
         "lifecycle_position": classification(
-            "unknown", "unclear", lifecycle_candidates
+            "unknown", "unclear", unique_candidates(lifecycle_candidates)
         ),
         "document_scene": classification(
-            "unknown", "unclear", scene_candidates
+            "unknown", "unclear", unique_candidates(scene_candidates)
         ),
-        "material_subtype": classification("unknown", "unclear"),
+        "material_subtype": classification(
+            "unknown",
+            "unclear",
+            unique_candidates(material_subtype_candidates),
+        ),
         "task_mode": task["mode"],
         "support_level": "recognition_coverage",
         "processing_mode": "conservative_audit",
@@ -1009,12 +1583,11 @@ def build_perception_decision(request):
         [task["instruction"], view["title"], view["searchable_text"]]
     )
 
-    has_preliminary_design_signal = any(
-        signal in text for signal in PRELIMINARY_DESIGN_SIGNALS
-    )
-    has_negated_signal = has_negated_preliminary_design_signal(text)
-    if has_preliminary_design_signal and not has_negated_signal:
-        decision = build_explicit_preliminary_design_decision(task)
+    matching_routes = resolve_engineering_identity_routes(task, view)
+    if len(matching_routes) == 1:
+        decision = build_explicit_engineering_decision(
+            task, matching_routes[0]
+        )
     else:
         decision = build_unclear_decision(task, text)
     decision = apply_claim_boundaries(decision, claims)
@@ -1042,8 +1615,9 @@ def build_perception_decision(request):
     complete_plan_creation = (
         task["mode"] == "create"
         and task["scope"] == "document"
-        and decision["material_subtype"]["value"]
-        == "preliminary_design"
+        and decision["business_domain"]["value"]
+        == "engineering_construction"
+        and decision["material_subtype"]["value"] != "unknown"
     )
     if complete_plan_creation or material_set is not None:
         decision["processing_mode"] = "two_stage"

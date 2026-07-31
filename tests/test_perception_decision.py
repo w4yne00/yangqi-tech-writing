@@ -50,6 +50,582 @@ class PerceptionDecisionTests(unittest.TestCase):
         request["material_set"] = deepcopy(case["material_set"])
         return self.run_decision(request)["decision"]
 
+    def run_engineering_case(self, case_id):
+        case = next(
+            item
+            for item in self.fixture["engineering_construction_cases"]
+            if item["case_id"] == case_id
+        )
+        request = deepcopy(self.fixture["cases"][0]["request"])
+        request["task"]["instruction"] = case["instruction"]
+        request["material_view"]["title"] = case["title"]
+        request["material_view"]["segments"][0]["text"] = (
+            "本合成片段只提供材料识别所需的最小信息。"
+        )
+        return case, self.run_decision(request)["decision"]
+
+    def test_engineering_initiation_materials_keep_distinct_subtypes(self):
+        for case_id in (
+            "FOUNDATION-02-PROJECT-PROPOSAL",
+            "FOUNDATION-02-FEASIBILITY-STUDY",
+        ):
+            with self.subTest(case_id=case_id):
+                case, decision = self.run_engineering_case(case_id)
+
+                self.assertEqual(
+                    "engineering_construction",
+                    decision["business_domain"]["value"],
+                )
+                for dimension in (
+                    "lifecycle_position",
+                    "document_scene",
+                    "material_subtype",
+                ):
+                    self.assertEqual(
+                        case["expected"][dimension],
+                        decision[dimension]["value"],
+                    )
+                    self.assertEqual(
+                        "explicit", decision[dimension]["confidence"]
+                    )
+                self.assertEqual("basic_support", decision["support_level"])
+                self.assertEqual("quick_path", decision["processing_mode"])
+
+    def test_engineering_design_near_misses_keep_distinct_subtypes(self):
+        expected_subtypes = {
+            "FOUNDATION-02-PRELIMINARY-DESIGN-NEAR-MISS":
+                "preliminary_design",
+            "FOUNDATION-02-DETAILED-DESIGN-NEAR-MISS": "detailed_design",
+            "FOUNDATION-02-OVERALL-ARCHITECTURE": "overall_architecture",
+        }
+
+        actual_subtypes = {}
+        for case_id, expected_subtype in expected_subtypes.items():
+            with self.subTest(case_id=case_id):
+                _, decision = self.run_engineering_case(case_id)
+                actual_subtypes[case_id] = decision["material_subtype"]["value"]
+
+                self.assertEqual(
+                    "engineering_construction",
+                    decision["business_domain"]["value"],
+                )
+                self.assertEqual(
+                    "design", decision["lifecycle_position"]["value"]
+                )
+                self.assertEqual(
+                    "architecture_design",
+                    decision["document_scene"]["value"],
+                )
+                self.assertEqual(
+                    expected_subtype,
+                    decision["material_subtype"]["value"],
+                )
+
+        self.assertEqual(3, len(set(actual_subtypes.values())))
+
+    def test_engineering_procurement_near_misses_load_distinct_scenes(self):
+        expected_scenes = {
+            "FOUNDATION-02-TECHNICAL-SPECIFICATION": (
+                "technical_spec",
+                "technical_specification",
+                "scene.technical_spec",
+            ),
+            "FOUNDATION-02-BID-RESPONSE": (
+                "bid_response",
+                "bid_response",
+                "scene.bid_response",
+            ),
+        }
+
+        for case_id, (
+            expected_scene,
+            expected_subtype,
+            expected_contract,
+        ) in expected_scenes.items():
+            with self.subTest(case_id=case_id):
+                _, decision = self.run_engineering_case(case_id)
+
+                self.assertEqual(
+                    "procurement",
+                    decision["lifecycle_position"]["value"],
+                )
+                self.assertEqual(
+                    expected_scene, decision["document_scene"]["value"]
+                )
+                self.assertEqual(
+                    expected_subtype,
+                    decision["material_subtype"]["value"],
+                )
+                self.assertIn(expected_contract, decision["load_contracts"])
+                self.assertNotIn(
+                    "deep_support", json.dumps(decision, ensure_ascii=False)
+                )
+
+    def test_engineering_delivery_materials_preserve_lifecycle_and_genre(self):
+        case_ids = (
+            "FOUNDATION-02-ENGINEERING-IMPLEMENTATION-PLAN",
+            "FOUNDATION-02-IMPLEMENTATION-RECORD",
+            "FOUNDATION-02-STAGE-REPORT",
+            "FOUNDATION-02-TRIAL-RUN-REPORT",
+            "FOUNDATION-02-OPERATION-REPORT",
+        )
+
+        for case_id in case_ids:
+            with self.subTest(case_id=case_id):
+                case, decision = self.run_engineering_case(case_id)
+
+                self.assertEqual(
+                    "engineering_construction",
+                    decision["business_domain"]["value"],
+                )
+                for dimension in (
+                    "lifecycle_position",
+                    "document_scene",
+                    "material_subtype",
+                ):
+                    self.assertEqual(
+                        case["expected"][dimension],
+                        decision[dimension]["value"],
+                    )
+                self.assertEqual("basic_support", decision["support_level"])
+
+    def test_engineering_acceptance_near_misses_keep_distinct_subtypes(self):
+        case_ids = (
+            "FOUNDATION-02-ACCEPTANCE-OUTLINE",
+            "FOUNDATION-02-ACCEPTANCE-REPORT",
+        )
+
+        subtypes = []
+        for case_id in case_ids:
+            with self.subTest(case_id=case_id):
+                case, decision = self.run_engineering_case(case_id)
+                subtypes.append(decision["material_subtype"]["value"])
+
+                self.assertEqual(
+                    "acceptance",
+                    decision["lifecycle_position"]["value"],
+                )
+                self.assertEqual(
+                    "review_acceptance",
+                    decision["document_scene"]["value"],
+                )
+                self.assertEqual(
+                    case["expected"]["material_subtype"],
+                    decision["material_subtype"]["value"],
+                )
+                self.assertIn(
+                    "scene.review_acceptance",
+                    decision["load_contracts"],
+                )
+
+        self.assertEqual(
+            ["acceptance_outline", "acceptance_report"], subtypes
+        )
+
+    def test_ambiguous_engineering_materials_return_candidates_with_basis(self):
+        cases = (
+            (
+                "设计材料",
+                {
+                    "preliminary_design",
+                    "detailed_design",
+                    "overall_architecture",
+                },
+            ),
+            (
+                "工程验收材料",
+                {"acceptance_outline", "acceptance_report"},
+            ),
+            (
+                "实施方案",
+                {"engineering_implementation_plan"},
+            ),
+            (
+                "阶段汇报",
+                {"stage_report"},
+            ),
+            (
+                "工程实施材料",
+                {
+                    "engineering_implementation_plan",
+                    "implementation_record",
+                },
+            ),
+            (
+                "工程立项材料",
+                {"project_proposal", "feasibility_study"},
+            ),
+            (
+                "工程采购材料",
+                {"technical_specification", "bid_response"},
+            ),
+            (
+                "工程试运行材料",
+                {"trial_run_report"},
+            ),
+            (
+                "工程运营材料",
+                {"operation_report"},
+            ),
+        )
+
+        for label, expected_subtypes in cases:
+            with self.subTest(label=label):
+                request = deepcopy(self.fixture["cases"][1]["request"])
+                request["task"]["instruction"] = (
+                    "审阅这份{}，具体子类型尚未确认。".format(label)
+                )
+                request["material_view"]["title"] = label
+                request["material_view"]["segments"][0]["text"] = (
+                    "材料未提供可确定具体子类型的附加信息。"
+                )
+
+                decision = self.run_decision(request)["decision"]
+
+                self.assertEqual(
+                    "unknown", decision["material_subtype"]["value"]
+                )
+                candidates = decision["material_subtype"]["candidates"]
+                self.assertEqual(
+                    expected_subtypes,
+                    {item["value"] for item in candidates},
+                )
+                self.assertTrue(
+                    all(item["basis"].strip() for item in candidates)
+                )
+                self.assertIn(
+                    "material_subtype", decision["pending_confirmations"]
+                )
+                self.assertEqual(
+                    "recognition_coverage", decision["support_level"]
+                )
+                self.assertEqual(
+                    "conservative_audit", decision["processing_mode"]
+                )
+                self.assertEqual(
+                    [
+                        "common.protected_spans",
+                        "common.evidence_policy",
+                        "common.statement_force_policy",
+                        "common.quality_gate_h1_h6",
+                    ],
+                    decision["load_contracts"],
+                )
+
+    def test_explicit_title_identity_wins_over_body_material_references(self):
+        cases = (
+            (
+                "FOUNDATION-02-PRELIMINARY-DESIGN-NEAR-MISS",
+                "本初步设计依据工程可研报告确定的建设范围编制。",
+                "preliminary_design",
+            ),
+            (
+                "FOUNDATION-02-BID-RESPONSE",
+                "本文件逐条响应招标技术要求，并说明证明材料位置。",
+                "bid_response",
+            ),
+            (
+                "FOUNDATION-02-PRELIMINARY-DESIGN-NEAR-MISS",
+                "本设计采用某科研课题形成的技术成果。",
+                "preliminary_design",
+            ),
+            (
+                "FOUNDATION-02-PRELIMINARY-DESIGN-NEAR-MISS",
+                "本设计引用了某科研课题形成的技术成果。",
+                "preliminary_design",
+            ),
+            (
+                "FOUNDATION-02-PRELIMINARY-DESIGN-NEAR-MISS",
+                "本设计采用来自某科研课题的成果。",
+                "preliminary_design",
+            ),
+            (
+                "FOUNDATION-02-PRELIMINARY-DESIGN-NEAR-MISS",
+                "科研课题成果已在本工程中应用。",
+                "preliminary_design",
+            ),
+            (
+                "FOUNDATION-02-PRELIMINARY-DESIGN-NEAR-MISS",
+                "科研课题成果用于本工程初步设计。",
+                "preliminary_design",
+            ),
+        )
+
+        for case_id, body_text, expected_subtype in cases:
+            with self.subTest(case_id=case_id):
+                case = next(
+                    item
+                    for item in self.fixture[
+                        "engineering_construction_cases"
+                    ]
+                    if item["case_id"] == case_id
+                )
+                request = deepcopy(self.fixture["cases"][0]["request"])
+                request["task"]["instruction"] = case["instruction"]
+                request["material_view"]["title"] = case["title"]
+                request["material_view"]["segments"][0]["text"] = body_text
+
+                decision = self.run_decision(request)["decision"]
+
+                self.assertEqual(
+                    expected_subtype,
+                    decision["material_subtype"]["value"],
+                )
+                self.assertEqual(
+                    case["expected"]["document_scene"],
+                    decision["document_scene"]["value"],
+                )
+
+    def test_task_negation_can_reject_an_explicit_title_identity(self):
+        request = deepcopy(self.fixture["cases"][0]["request"])
+        request["task"]["instruction"] = (
+            "审阅这份材料；用户确认这不是初步设计，具体文种待确认。"
+        )
+
+        decision = self.run_decision(request)["decision"]
+
+        self.assertEqual("unknown", decision["material_subtype"]["value"])
+        self.assertEqual(
+            "conservative_audit", decision["processing_mode"]
+        )
+        self.assertIn("material_subtype", decision["pending_confirmations"])
+        self.assertNotIn(
+            "preliminary_design",
+            {
+                item["value"]
+                for item in decision["material_subtype"]["candidates"]
+            },
+        )
+
+    def test_task_replacement_can_correct_an_explicit_title_identity(self):
+        request = deepcopy(self.fixture["cases"][0]["request"])
+        request["task"]["instruction"] = (
+            "审阅这份材料；用户确认这不是初步设计，而是详细设计。"
+        )
+
+        decision = self.run_decision(request)["decision"]
+
+        self.assertEqual(
+            "detailed_design", decision["material_subtype"]["value"]
+        )
+        self.assertEqual(
+            "architecture_design", decision["document_scene"]["value"]
+        )
+        self.assertEqual("explicit", decision["material_subtype"]["confidence"])
+
+    def test_project_acceptance_does_not_imply_engineering_domain(self):
+        cases = (
+            (
+                "某项目验收报告",
+                {"engineering_construction"},
+            ),
+            (
+                "某科研课题项目验收报告",
+                set(),
+            ),
+        )
+
+        for title, expected_domain_candidates in cases:
+            with self.subTest(title=title):
+                request = deepcopy(self.fixture["cases"][1]["request"])
+                request["task"]["instruction"] = (
+                    "审阅这份{}，只标出问题。".format(title)
+                )
+                request["material_view"]["title"] = title
+                request["material_view"]["segments"][0]["text"] = (
+                    "本材料未提供可改变业务域判断的其他信息。"
+                )
+
+                decision = self.run_decision(request)["decision"]
+
+                self.assertEqual(
+                    "unknown", decision["business_domain"]["value"]
+                )
+                self.assertEqual(
+                    expected_domain_candidates,
+                    {
+                        item["value"]
+                        for item in decision["business_domain"]["candidates"]
+                    },
+                )
+                self.assertEqual(
+                    "recognition_coverage", decision["support_level"]
+                )
+                self.assertEqual(
+                    "conservative_audit", decision["processing_mode"]
+                )
+
+    def test_explicit_research_context_rejects_engineering_routes(self):
+        titles = (
+            "某科研课题项目建议书",
+            "某科研课题项目实施阶段汇报",
+            "某科研课题研究实施方案",
+            "某科研课题中期阶段汇报",
+        )
+
+        for title in titles:
+            with self.subTest(title=title):
+                request = deepcopy(self.fixture["cases"][1]["request"])
+                request["task"]["instruction"] = (
+                    "审阅这份{}，只标出问题。".format(title)
+                )
+                request["material_view"]["title"] = title
+                request["material_view"]["segments"][0]["text"] = (
+                    "本材料未提供可改变业务域判断的其他信息。"
+                )
+
+                decision = self.run_decision(request)["decision"]
+
+                self.assertEqual(
+                    "unknown", decision["business_domain"]["value"]
+                )
+                self.assertNotIn(
+                    "engineering_construction",
+                    {
+                        item["value"]
+                        for item in decision[
+                            "business_domain"
+                        ]["candidates"]
+                    },
+                )
+                self.assertEqual(
+                    [
+                        "common.protected_spans",
+                        "common.evidence_policy",
+                        "common.statement_force_policy",
+                        "common.quality_gate_h1_h6",
+                    ],
+                    decision["load_contracts"],
+                )
+
+    def test_research_context_outside_title_overrides_engineering_title_route(self):
+        cases = (
+            (
+                "审阅这份科研课题项目建议书，只标出问题。",
+                "本材料未提供其他分类信息。",
+            ),
+            (
+                "审阅这份项目建议书，只标出问题。",
+                "本材料属于科研课题语境。",
+            ),
+        )
+
+        for instruction, body in cases:
+            with self.subTest(instruction=instruction, body=body):
+                request = deepcopy(self.fixture["cases"][1]["request"])
+                request["task"]["instruction"] = instruction
+                request["material_view"]["title"] = "项目建议书"
+                request["material_view"]["segments"][0]["text"] = body
+
+                decision = self.run_decision(request)["decision"]
+
+                self.assertEqual(
+                    "unknown", decision["business_domain"]["value"]
+                )
+                self.assertNotIn(
+                    "engineering_construction",
+                    {
+                        item["value"]
+                        for item in decision[
+                            "business_domain"
+                        ]["candidates"]
+                    },
+                )
+                self.assertEqual(
+                    "recognition_coverage", decision["support_level"]
+                )
+
+    def test_negated_research_context_allows_explicit_engineering_replacement(self):
+        request = deepcopy(self.fixture["cases"][1]["request"])
+        request["task"]["instruction"] = (
+            "用户确认这不是科研课题材料，而是工程初步设计说明书。"
+        )
+        request["material_view"]["title"] = "材料说明"
+        request["material_view"]["segments"][0]["text"] = (
+            "本材料未提供其他分类信息。"
+        )
+
+        decision = self.run_decision(request)["decision"]
+
+        self.assertEqual(
+            "engineering_construction",
+            decision["business_domain"]["value"],
+        )
+        self.assertEqual(
+            "preliminary_design", decision["material_subtype"]["value"]
+        )
+        self.assertEqual("explicit", decision["material_subtype"]["confidence"])
+
+    def test_generic_negation_excludes_rejected_material_candidates(self):
+        cases = (
+            (
+                "实施方案",
+                "用户确认这不是实施方案，具体材料子类型待确认。",
+                "engineering_implementation_plan",
+            ),
+            (
+                "某项目验收报告",
+                "用户确认这不是项目验收报告，具体文种待确认。",
+                "acceptance_report",
+            ),
+        )
+
+        for title, instruction, rejected_subtype in cases:
+            with self.subTest(title=title):
+                request = deepcopy(self.fixture["cases"][1]["request"])
+                request["task"]["instruction"] = instruction
+                request["material_view"]["title"] = title
+                request["material_view"]["segments"][0]["text"] = (
+                    "本材料未提供其他分类信息。"
+                )
+
+                decision = self.run_decision(request)["decision"]
+
+                self.assertNotIn(
+                    rejected_subtype,
+                    {
+                        item["value"]
+                        for item in decision[
+                            "material_subtype"
+                        ]["candidates"]
+                    },
+                )
+                self.assertEqual(
+                    "conservative_audit", decision["processing_mode"]
+                )
+
+    def test_recognized_engineering_document_creation_uses_two_stage_only(self):
+        case = next(
+            item
+            for item in self.fixture["engineering_construction_cases"]
+            if item["case_id"] == "FOUNDATION-02-FEASIBILITY-STUDY"
+        )
+        request = deepcopy(self.fixture["cases"][0]["request"])
+        request["task"] = {
+            "instruction": "新建一份完整的工程可研报告。",
+            "mode": "create",
+            "scope": "document",
+        }
+        request["material_view"]["title"] = case["title"]
+        request["material_view"]["segments"][0]["text"] = (
+            "本合成片段只提供材料识别所需的最小信息。"
+        )
+
+        decision = self.run_decision(request)["decision"]
+
+        self.assertEqual(
+            "feasibility_study", decision["material_subtype"]["value"]
+        )
+        self.assertEqual("recognition_coverage", decision["support_level"])
+        self.assertEqual("two_stage", decision["processing_mode"])
+        self.assertIn("writing_preparation_sheet", decision)
+        self.assertIn(
+            "common.writing_preparation", decision["load_contracts"]
+        )
+        self.assertNotIn(
+            "scene.feasibility_study", decision["load_contracts"]
+        )
+
     def test_explicit_preliminary_design_review_returns_observable_decision(self):
         result = self.run_decision(self.fixture["cases"][0]["request"])
 

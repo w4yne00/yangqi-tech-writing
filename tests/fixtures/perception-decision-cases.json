@@ -58,6 +58,148 @@
       }
     }
   ],
+  "engineering_construction_cases": [
+    {
+      "case_id": "FOUNDATION-02-PROJECT-PROPOSAL",
+      "title": "某工程项目建议书",
+      "instruction": "审阅这份项目建议书，只标出问题。",
+      "expected": {
+        "lifecycle_position": "initiation",
+        "document_scene": "feasibility_study",
+        "material_subtype": "project_proposal"
+      }
+    },
+    {
+      "case_id": "FOUNDATION-02-FEASIBILITY-STUDY",
+      "title": "某工程可行性研究报告",
+      "instruction": "审阅这份工程可研报告，只标出问题。",
+      "expected": {
+        "lifecycle_position": "initiation",
+        "document_scene": "feasibility_study",
+        "material_subtype": "feasibility_study"
+      }
+    },
+    {
+      "case_id": "FOUNDATION-02-PRELIMINARY-DESIGN-NEAR-MISS",
+      "title": "某工程初步设计说明书",
+      "instruction": "审阅这份初设说明书，只标出问题。",
+      "expected": {
+        "lifecycle_position": "design",
+        "document_scene": "architecture_design",
+        "material_subtype": "preliminary_design"
+      }
+    },
+    {
+      "case_id": "FOUNDATION-02-DETAILED-DESIGN-NEAR-MISS",
+      "title": "某工程详细设计说明书",
+      "instruction": "审阅这份详设说明书，只标出问题。",
+      "expected": {
+        "lifecycle_position": "design",
+        "document_scene": "architecture_design",
+        "material_subtype": "detailed_design"
+      }
+    },
+    {
+      "case_id": "FOUNDATION-02-OVERALL-ARCHITECTURE",
+      "title": "某工程总体架构设计",
+      "instruction": "审阅这份总体架构设计，只标出问题。",
+      "expected": {
+        "lifecycle_position": "design",
+        "document_scene": "architecture_design",
+        "material_subtype": "overall_architecture"
+      }
+    },
+    {
+      "case_id": "FOUNDATION-02-TECHNICAL-SPECIFICATION",
+      "title": "某工程招标技术规范书",
+      "instruction": "审阅这份技术规范书，只标出问题。",
+      "expected": {
+        "lifecycle_position": "procurement",
+        "document_scene": "technical_spec",
+        "material_subtype": "technical_specification"
+      }
+    },
+    {
+      "case_id": "FOUNDATION-02-BID-RESPONSE",
+      "title": "某工程投标技术应答文件",
+      "instruction": "审阅这份投标技术应答，只标出问题。",
+      "expected": {
+        "lifecycle_position": "procurement",
+        "document_scene": "bid_response",
+        "material_subtype": "bid_response"
+      }
+    },
+    {
+      "case_id": "FOUNDATION-02-ENGINEERING-IMPLEMENTATION-PLAN",
+      "title": "某工程实施方案",
+      "instruction": "审阅这份工程实施方案，只标出问题。",
+      "expected": {
+        "lifecycle_position": "implementation",
+        "document_scene": "architecture_design",
+        "material_subtype": "engineering_implementation_plan"
+      }
+    },
+    {
+      "case_id": "FOUNDATION-02-IMPLEMENTATION-RECORD",
+      "title": "某工程实施记录",
+      "instruction": "审阅这份工程实施记录，只标出问题。",
+      "expected": {
+        "lifecycle_position": "implementation",
+        "document_scene": "review_acceptance",
+        "material_subtype": "implementation_record"
+      }
+    },
+    {
+      "case_id": "FOUNDATION-02-STAGE-REPORT",
+      "title": "某工程建设阶段汇报",
+      "instruction": "审阅这份工程建设阶段汇报，只标出问题。",
+      "expected": {
+        "lifecycle_position": "implementation",
+        "document_scene": "presentation",
+        "material_subtype": "stage_report"
+      }
+    },
+    {
+      "case_id": "FOUNDATION-02-TRIAL-RUN-REPORT",
+      "title": "某工程试运行报告",
+      "instruction": "审阅这份工程试运行报告，只标出问题。",
+      "expected": {
+        "lifecycle_position": "trial_run",
+        "document_scene": "review_acceptance",
+        "material_subtype": "trial_run_report"
+      }
+    },
+    {
+      "case_id": "FOUNDATION-02-OPERATION-REPORT",
+      "title": "某工程运行维护报告",
+      "instruction": "审阅这份工程运行维护报告，只标出问题。",
+      "expected": {
+        "lifecycle_position": "operation",
+        "document_scene": "presentation",
+        "material_subtype": "operation_report"
+      }
+    },
+    {
+      "case_id": "FOUNDATION-02-ACCEPTANCE-OUTLINE",
+      "title": "某工程验收大纲",
+      "instruction": "审阅这份工程验收大纲，只标出问题。",
+      "expected": {
+        "lifecycle_position": "acceptance",
+        "document_scene": "review_acceptance",
+        "material_subtype": "acceptance_outline"
+      }
+    },
+    {
+      "case_id": "FOUNDATION-02-ACCEPTANCE-REPORT",
+      "title": "某工程验收报告",
+      "instruction": "审阅这份工程验收报告，只标出问题。",
+      "expected": {
+        "lifecycle_position": "acceptance",
+        "document_scene": "review_acceptance",
+        "material_subtype": "acceptance_report"
+      }
+    }
+  ],
   "material_set_cases": [
     {
       "case_id": "FOUNDATION-08-RELATION-TYPES",
