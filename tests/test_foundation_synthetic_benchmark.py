@@ -119,6 +119,35 @@ class FoundationSyntheticBenchmarkTests(unittest.TestCase):
             self.fail("未知 input_profile: {}".format(profile))
         return request
 
+    def integration_observations(self, decision):
+        claims = decision.get("claim_decisions") or [{}]
+        material_review = decision.get("material_set_review", {})
+        structure = decision.get("structure_adaptation", {})
+        extraction = decision.get("extraction_gap_review", {})
+        return {
+            "processing_mode": decision.get("processing_mode"),
+            "allowed_statement_force": claims[0].get(
+                "allowed_statement_force"
+            ),
+            "action": claims[0].get("action"),
+            "relationship_types": [
+                relation["relation_type"]
+                for relation in material_review.get("relationships", [])
+            ],
+            "conflict_dimensions": [
+                conflict["dimension"]
+                for conflict in material_review.get("conflicts", [])
+            ],
+            "review_status": material_review.get("review_status"),
+            "mode": structure.get("mode"),
+            "structure_authority": structure.get("structure_authority"),
+            "material_contract_role": structure.get(
+                "material_contract_role"
+            ),
+            "status": extraction.get("status"),
+            "blocked_claim_ids": extraction.get("blocked_claim_ids"),
+        }
+
     def test_metadata_limits_the_public_evidence_claim(self):
         data = self.benchmark
 
@@ -235,59 +264,16 @@ class FoundationSyntheticBenchmarkTests(unittest.TestCase):
                 expected = item["expected"]
                 profile = item["input_profile"]
                 observed_profiles.add(profile)
-
-                if "processing_mode" in expected:
-                    self.assertEqual(
-                        expected["processing_mode"],
-                        decision["processing_mode"],
-                    )
-                if profile == "statement_force":
-                    claim = decision["claim_decisions"][0]
-                    self.assertEqual(
-                        expected["allowed_statement_force"],
-                        claim["allowed_statement_force"],
-                    )
-                    self.assertEqual(expected["action"], claim["action"])
-                elif profile == "material_set":
-                    review = decision["material_set_review"]
-                    if "relationship_types" in expected:
+                observations = self.integration_observations(decision)
+                for field, expected_value in expected.items():
+                    if field == "blocker":
+                        self.assertIn(expected_value, decision["blockers"])
+                    else:
                         self.assertEqual(
-                            expected["relationship_types"],
-                            [
-                                relation["relation_type"]
-                                for relation in review["relationships"]
-                            ],
+                            expected_value,
+                            observations[field],
+                            field,
                         )
-                    if "conflict_dimensions" in expected:
-                        self.assertEqual(
-                            expected["conflict_dimensions"],
-                            [
-                                conflict["dimension"]
-                                for conflict in review["conflicts"]
-                            ],
-                        )
-                    self.assertEqual(
-                        expected["review_status"], review["review_status"]
-                    )
-                elif profile == "formal_template":
-                    adaptation = decision["structure_adaptation"]
-                    self.assertEqual(expected["mode"], adaptation["mode"])
-                    self.assertEqual(
-                        expected["structure_authority"],
-                        adaptation["structure_authority"],
-                    )
-                    self.assertEqual(
-                        "content_responsibility_check_only",
-                        adaptation["material_contract_role"],
-                    )
-                elif profile == "extraction_gap":
-                    review = decision["extraction_gap_review"]
-                    self.assertEqual(expected["status"], review["status"])
-                    self.assertEqual(
-                        expected["blocked_claim_ids"],
-                        review["blocked_claim_ids"],
-                    )
-                    self.assertIn(expected["blocker"], decision["blockers"])
 
                 serialized = json.dumps(decision, ensure_ascii=False)
                 for claim in self.benchmark["prohibited_claims"]:
@@ -412,6 +398,20 @@ class FoundationSyntheticBenchmarkTests(unittest.TestCase):
             contracts["stable_version"],
             (ROOT / "VERSION").read_text(encoding="utf-8").strip(),
         )
+
+        regression = subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                "unittest",
+                *contracts["stable_contract_test_modules"],
+            ],
+            cwd=str(ROOT),
+            capture_output=True,
+            check=False,
+            text=True,
+        )
+        self.assertEqual(0, regression.returncode, regression.stderr)
 
         for audit in contracts["audit_scripts"]:
             with self.subTest(script=audit["script"]):

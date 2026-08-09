@@ -291,7 +291,8 @@
       "input_profile": "formal_template",
       "expected": {
         "mode": "formal_template",
-        "structure_authority": "formal_template"
+        "structure_authority": "formal_template",
+        "material_contract_role": "content_responsibility_check_only"
       }
     },
     {
@@ -339,6 +340,20 @@
     "stable_version": "1.1.0",
     "behavior_eval_count": 43,
     "trigger_eval_count": 20,
+    "stable_contract_test_modules": [
+      "tests.test_causal_boundary",
+      "tests.test_composite_routing",
+      "tests.test_evals",
+      "tests.test_evidence_check",
+      "tests.test_protected_diff",
+      "tests.test_references",
+      "tests.test_release_metadata",
+      "tests.test_scene_packs",
+      "tests.test_static_fixture_evidence",
+      "tests.test_structure",
+      "tests.test_style_audit",
+      "tests.test_trigger_evals"
+    ],
     "audit_scripts": [
       {
         "script": "scripts/protected_diff.py",
