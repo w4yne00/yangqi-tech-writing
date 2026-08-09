@@ -6,6 +6,29 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class ReferenceContractTests(unittest.TestCase):
+    def test_research_project_reference_defines_catalog_and_support_boundary(self):
+        text = (ROOT / "references/research-project.md").read_text(
+            encoding="utf-8"
+        )
+        for phrase in [
+            "`application`",
+            "`task_agreement`",
+            "`research_implementation`",
+            "`midterm_review`",
+            "`final_acceptance`",
+            "`research_application`",
+            "`research_feasibility_assessment`",
+            "`research_task_agreement`",
+            "`research_implementation_plan`",
+            "`research_interim_report`",
+            "`research_interim_inspection`",
+            "`research_final_acceptance`",
+            "`recognition_coverage`",
+            "`basic_support`",
+            "不补造科研管理要求",
+        ]:
+            self.assertIn(phrase, text)
+
     def test_writing_preparation_contract_separates_two_stage_and_quick_path(self):
         text = (ROOT / "references/writing-preparation.md").read_text(
             encoding="utf-8"

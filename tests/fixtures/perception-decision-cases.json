@@ -200,6 +200,78 @@
       }
     }
   ],
+  "research_project_cases": [
+    {
+      "case_id": "FOUNDATION-03-RESEARCH-APPLICATION",
+      "title": "某科研课题申报书",
+      "instruction": "审阅这份科研课题申报书，只标出问题。",
+      "expected": {
+        "lifecycle_position": "application",
+        "document_scene": "feasibility_study",
+        "material_subtype": "research_application"
+      }
+    },
+    {
+      "case_id": "FOUNDATION-03-RESEARCH-FEASIBILITY-ASSESSMENT",
+      "title": "某科研课题可行性论证报告",
+      "instruction": "审阅这份科研课题可研论证报告，只标出问题。",
+      "expected": {
+        "lifecycle_position": "application",
+        "document_scene": "feasibility_study",
+        "material_subtype": "research_feasibility_assessment"
+      }
+    },
+    {
+      "case_id": "FOUNDATION-03-RESEARCH-TASK-AGREEMENT",
+      "title": "某科研课题任务书",
+      "instruction": "审阅这份科研课题任务书，只标出问题。",
+      "expected": {
+        "lifecycle_position": "task_agreement",
+        "document_scene": "technical_spec",
+        "material_subtype": "research_task_agreement"
+      }
+    },
+    {
+      "case_id": "FOUNDATION-03-RESEARCH-IMPLEMENTATION-PLAN",
+      "title": "某科研课题研究实施方案",
+      "instruction": "审阅这份科研课题研究实施方案，只标出问题。",
+      "expected": {
+        "lifecycle_position": "research_implementation",
+        "document_scene": "architecture_design",
+        "material_subtype": "research_implementation_plan"
+      }
+    },
+    {
+      "case_id": "FOUNDATION-03-RESEARCH-INTERIM-REPORT",
+      "title": "某科研课题中期汇报",
+      "instruction": "审阅这份科研课题中期汇报，只标出问题。",
+      "expected": {
+        "lifecycle_position": "midterm_review",
+        "document_scene": "presentation",
+        "material_subtype": "research_interim_report"
+      }
+    },
+    {
+      "case_id": "FOUNDATION-03-RESEARCH-INTERIM-INSPECTION",
+      "title": "某科研课题中期检查报告",
+      "instruction": "审阅这份科研课题中期检查报告，只标出问题。",
+      "expected": {
+        "lifecycle_position": "midterm_review",
+        "document_scene": "review_acceptance",
+        "material_subtype": "research_interim_inspection"
+      }
+    },
+    {
+      "case_id": "FOUNDATION-03-RESEARCH-FINAL-ACCEPTANCE",
+      "title": "某科研课题结题验收材料",
+      "instruction": "审阅这份科研课题结题验收材料，只标出问题。",
+      "expected": {
+        "lifecycle_position": "final_acceptance",
+        "document_scene": "review_acceptance",
+        "material_subtype": "research_final_acceptance"
+      }
+    }
+  ],
   "material_set_cases": [
     {
       "case_id": "FOUNDATION-08-RELATION-TYPES",

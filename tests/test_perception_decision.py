@@ -64,6 +64,209 @@ class PerceptionDecisionTests(unittest.TestCase):
         )
         return case, self.run_decision(request)["decision"]
 
+    def run_research_case(self, case_id):
+        case = next(
+            item
+            for item in self.fixture["research_project_cases"]
+            if item["case_id"] == case_id
+        )
+        request = deepcopy(self.fixture["cases"][0]["request"])
+        request["task"]["instruction"] = case["instruction"]
+        request["material_view"]["title"] = case["title"]
+        request["material_view"]["segments"][0]["text"] = (
+            "本合成片段只提供材料识别所需的最小信息。"
+        )
+        return case, self.run_decision(request)["decision"]
+
+    def test_research_application_uses_research_lifecycle(self):
+        case, decision = self.run_research_case(
+            "FOUNDATION-03-RESEARCH-APPLICATION"
+        )
+
+        self.assertEqual(
+            "research_project", decision["business_domain"]["value"]
+        )
+        for dimension in (
+            "lifecycle_position",
+            "document_scene",
+            "material_subtype",
+        ):
+            self.assertEqual(
+                case["expected"][dimension], decision[dimension]["value"]
+            )
+            self.assertEqual("explicit", decision[dimension]["confidence"])
+        self.assertEqual("basic_support", decision["support_level"])
+        self.assertEqual("quick_path", decision["processing_mode"])
+        self.assertIn("scene.feasibility_study", decision["load_contracts"])
+
+    def test_research_catalog_preserves_lifecycle_scene_and_subtype(self):
+        for case in self.fixture["research_project_cases"]:
+            with self.subTest(case_id=case["case_id"]):
+                _, decision = self.run_research_case(case["case_id"])
+
+                self.assertEqual(
+                    "research_project",
+                    decision["business_domain"]["value"],
+                )
+                for dimension in (
+                    "lifecycle_position",
+                    "document_scene",
+                    "material_subtype",
+                ):
+                    self.assertEqual(
+                        case["expected"][dimension],
+                        decision[dimension]["value"],
+                    )
+                self.assertEqual(
+                    "basic_support", decision["support_level"]
+                )
+                self.assertEqual("quick_path", decision["processing_mode"])
+                self.assertNotIn(
+                    "deep_support",
+                    json.dumps(decision, ensure_ascii=False),
+                )
+
+    def test_research_catalog_accepts_issue_terms_without_report_suffix(self):
+        cases = (
+            (
+                "科研申报书",
+                "application",
+                "research_application",
+            ),
+            (
+                "科研课题可研论证",
+                "application",
+                "research_feasibility_assessment",
+            ),
+            (
+                "科研实施方案",
+                "research_implementation",
+                "research_implementation_plan",
+            ),
+            (
+                "科研课题中期检查",
+                "midterm_review",
+                "research_interim_inspection",
+            ),
+        )
+
+        for title, expected_lifecycle, expected_subtype in cases:
+            with self.subTest(title=title):
+                request = deepcopy(self.fixture["cases"][0]["request"])
+                request["task"]["instruction"] = (
+                    "审阅这份{}，只标出问题。".format(title)
+                )
+                request["material_view"]["title"] = title
+                request["material_view"]["segments"][0]["text"] = (
+                    "本合成片段只提供材料识别所需的最小信息。"
+                )
+
+                decision = self.run_decision(request)["decision"]
+
+                self.assertEqual(
+                    "research_project",
+                    decision["business_domain"]["value"],
+                )
+                self.assertEqual(
+                    expected_lifecycle,
+                    decision["lifecycle_position"]["value"],
+                )
+                self.assertEqual(
+                    expected_subtype,
+                    decision["material_subtype"]["value"],
+                )
+
+    def test_research_context_combines_with_generic_document_titles(self):
+        cases = (
+            (
+                "申报书",
+                "application",
+                "research_application",
+            ),
+            (
+                "可研论证",
+                "application",
+                "research_feasibility_assessment",
+            ),
+            (
+                "任务书",
+                "task_agreement",
+                "research_task_agreement",
+            ),
+            (
+                "中期汇报",
+                "midterm_review",
+                "research_interim_report",
+            ),
+            (
+                "中期检查",
+                "midterm_review",
+                "research_interim_inspection",
+            ),
+        )
+
+        for title, expected_lifecycle, expected_subtype in cases:
+            with self.subTest(title=title):
+                request = deepcopy(self.fixture["cases"][0]["request"])
+                request["task"]["instruction"] = (
+                    "用户确认该材料属于科研课题，请审阅这份{}。".format(
+                        title
+                    )
+                )
+                request["material_view"]["title"] = title
+                request["material_view"]["segments"][0]["text"] = (
+                    "本合成片段只提供材料识别所需的最小信息。"
+                )
+
+                decision = self.run_decision(request)["decision"]
+
+                self.assertEqual(
+                    "research_project",
+                    decision["business_domain"]["value"],
+                )
+                self.assertEqual(
+                    expected_lifecycle,
+                    decision["lifecycle_position"]["value"],
+                )
+                self.assertEqual(
+                    expected_subtype,
+                    decision["material_subtype"]["value"],
+                )
+
+    def test_recognized_research_document_creation_uses_two_stage_only(self):
+        case = next(
+            item
+            for item in self.fixture["research_project_cases"]
+            if item["case_id"] == "FOUNDATION-03-RESEARCH-TASK-AGREEMENT"
+        )
+        request = deepcopy(self.fixture["cases"][0]["request"])
+        request["task"] = {
+            "instruction": "新建一份完整的科研课题任务书。",
+            "mode": "create",
+            "scope": "document",
+        }
+        request["material_view"]["title"] = case["title"]
+        request["material_view"]["segments"][0]["text"] = (
+            "本合成片段只提供材料识别所需的最小信息。"
+        )
+
+        decision = self.run_decision(request)["decision"]
+
+        self.assertEqual(
+            "research_project", decision["business_domain"]["value"]
+        )
+        self.assertEqual(
+            "research_task_agreement",
+            decision["material_subtype"]["value"],
+        )
+        self.assertEqual("recognition_coverage", decision["support_level"])
+        self.assertEqual("two_stage", decision["processing_mode"])
+        self.assertIn("writing_preparation_sheet", decision)
+        self.assertIn(
+            "common.writing_preparation", decision["load_contracts"]
+        )
+        self.assertNotIn("scene.technical_spec", decision["load_contracts"])
+
     def test_engineering_initiation_materials_keep_distinct_subtypes(self):
         for case_id in (
             "FOUNDATION-02-PROJECT-PROPOSAL",
@@ -238,7 +441,10 @@ class PerceptionDecisionTests(unittest.TestCase):
             ),
             (
                 "实施方案",
-                {"engineering_implementation_plan"},
+                {
+                    "engineering_implementation_plan",
+                    "research_implementation_plan",
+                },
             ),
             (
                 "阶段汇报",
@@ -311,6 +517,227 @@ class PerceptionDecisionTests(unittest.TestCase):
                     ],
                     decision["load_contracts"],
                 )
+
+    def test_generic_implementation_plan_keeps_domain_candidates(self):
+        request = deepcopy(self.fixture["cases"][1]["request"])
+        request["task"]["instruction"] = (
+            "审阅这份实施方案，业务域和具体类型尚未确认。"
+        )
+        request["material_view"]["title"] = "实施方案"
+        request["material_view"]["segments"][0]["text"] = (
+            "本材料未提供可确定所属业务域的附加信息。"
+        )
+
+        decision = self.run_decision(request)["decision"]
+
+        self.assertEqual(
+            {"engineering_construction", "research_project"},
+            {
+                item["value"]
+                for item in decision["business_domain"]["candidates"]
+            },
+        )
+        self.assertEqual(
+            {"implementation", "research_implementation"},
+            {
+                item["value"]
+                for item in decision["lifecycle_position"]["candidates"]
+            },
+        )
+        self.assertEqual(
+            {
+                "engineering_implementation_plan",
+                "research_implementation_plan",
+            },
+            {
+                item["value"]
+                for item in decision["material_subtype"]["candidates"]
+            },
+        )
+        self.assertEqual("recognition_coverage", decision["support_level"])
+        self.assertEqual("conservative_audit", decision["processing_mode"])
+
+    def test_ambiguous_research_stage_materials_keep_research_candidates(self):
+        cases = (
+            (
+                "科研课题申报材料",
+                {"application"},
+                {"feasibility_study"},
+                {
+                    "research_application",
+                    "research_feasibility_assessment",
+                },
+            ),
+            (
+                "科研课题任务约定材料",
+                {"task_agreement"},
+                {"technical_spec"},
+                {"research_task_agreement"},
+            ),
+            (
+                "科研课题研究实施材料",
+                {"research_implementation"},
+                {"architecture_design"},
+                {"research_implementation_plan"},
+            ),
+            (
+                "科研课题中期材料",
+                {"midterm_review"},
+                {"presentation", "review_acceptance"},
+                {"research_interim_report", "research_interim_inspection"},
+            ),
+            (
+                "科研课题验收报告",
+                {"final_acceptance"},
+                {"review_acceptance"},
+                {"research_final_acceptance"},
+            ),
+        )
+
+        for title, lifecycles, scenes, subtypes in cases:
+            with self.subTest(title=title):
+                request = deepcopy(self.fixture["cases"][1]["request"])
+                request["task"]["instruction"] = (
+                    "审阅这份{}，具体材料类型尚未确认。".format(title)
+                )
+                request["material_view"]["title"] = title
+                request["material_view"]["segments"][0]["text"] = (
+                    "本材料未提供可确定具体子类型的附加信息。"
+                )
+
+                decision = self.run_decision(request)["decision"]
+
+                self.assertEqual("unknown", decision["business_domain"]["value"])
+                self.assertEqual(
+                    {"research_project"},
+                    {
+                        item["value"]
+                        for item in decision["business_domain"]["candidates"]
+                    },
+                )
+                self.assertEqual(
+                    lifecycles,
+                    {
+                        item["value"]
+                        for item in decision["lifecycle_position"]["candidates"]
+                    },
+                )
+                self.assertEqual(
+                    scenes,
+                    {
+                        item["value"]
+                        for item in decision["document_scene"]["candidates"]
+                    },
+                )
+                self.assertEqual(
+                    subtypes,
+                    {
+                        item["value"]
+                        for item in decision["material_subtype"]["candidates"]
+                    },
+                )
+                self.assertEqual(
+                    "recognition_coverage", decision["support_level"]
+                )
+                self.assertEqual(
+                    "conservative_audit", decision["processing_mode"]
+                )
+
+    def test_conflicting_research_context_and_engineering_plan_stays_unclear(self):
+        request = deepcopy(self.fixture["cases"][1]["request"])
+        request["task"]["instruction"] = (
+            "用户确认该材料属于科研课题，请审阅这份工程实施方案。"
+        )
+        request["material_view"]["title"] = "工程实施方案"
+        request["material_view"]["segments"][0]["text"] = (
+            "本材料未提供能够消解业务域冲突的附加信息。"
+        )
+
+        decision = self.run_decision(request)["decision"]
+
+        self.assertEqual("unknown", decision["business_domain"]["value"])
+        self.assertEqual(
+            {"engineering_construction", "research_project"},
+            {
+                item["value"]
+                for item in decision["business_domain"]["candidates"]
+            },
+        )
+        self.assertEqual(
+            {
+                "engineering_implementation_plan",
+                "research_implementation_plan",
+            },
+            {
+                item["value"]
+                for item in decision["material_subtype"]["candidates"]
+            },
+        )
+        self.assertEqual("recognition_coverage", decision["support_level"])
+        self.assertEqual("conservative_audit", decision["processing_mode"])
+
+    def test_research_material_reference_does_not_become_main_identity(self):
+        for connector in (
+            "依据",
+            "引用",
+            "参照",
+            "参考",
+            "根据",
+            "按照",
+            "基于",
+            "见",
+        ):
+            with self.subTest(connector=connector):
+                request = deepcopy(self.fixture["cases"][1]["request"])
+                request["task"]["instruction"] = (
+                    "审阅这份网络安全管理制度，只标出问题。"
+                )
+                request["material_view"]["title"] = "网络安全管理制度"
+                request["material_view"]["segments"][0]["text"] = (
+                    "本制度{}某科研课题任务书中的成果管理条款编制。".format(
+                        connector
+                    )
+                )
+
+                decision = self.run_decision(request)["decision"]
+
+                self.assertEqual(
+                    "unknown", decision["business_domain"]["value"]
+                )
+                self.assertNotEqual(
+                    "research_task_agreement",
+                    decision["material_subtype"]["value"],
+                )
+                self.assertEqual(
+                    "recognition_coverage", decision["support_level"]
+                )
+                self.assertEqual(
+                    "conservative_audit", decision["processing_mode"]
+                )
+
+    def test_engineering_plan_title_wins_over_research_plan_reference(self):
+        request = deepcopy(self.fixture["cases"][0]["request"])
+        request["task"]["instruction"] = (
+            "审阅这份工程实施方案，只标出问题。"
+        )
+        request["material_view"]["title"] = "某工程实施方案"
+        request["material_view"]["segments"][0]["text"] = (
+            "本工程实施方案依据某科研课题研究实施方案中的试验成果编制。"
+        )
+
+        decision = self.run_decision(request)["decision"]
+
+        self.assertEqual(
+            "engineering_construction",
+            decision["business_domain"]["value"],
+        )
+        self.assertEqual(
+            "implementation", decision["lifecycle_position"]["value"]
+        )
+        self.assertEqual(
+            "engineering_implementation_plan",
+            decision["material_subtype"]["value"],
+        )
 
     def test_explicit_title_identity_wins_over_body_material_references(self):
         cases = (
@@ -421,7 +848,7 @@ class PerceptionDecisionTests(unittest.TestCase):
             ),
             (
                 "某科研课题项目验收报告",
-                set(),
+                {"research_project"},
             ),
         )
 
@@ -456,14 +883,22 @@ class PerceptionDecisionTests(unittest.TestCase):
                 )
 
     def test_explicit_research_context_rejects_engineering_routes(self):
-        titles = (
-            "某科研课题项目建议书",
-            "某科研课题项目实施阶段汇报",
-            "某科研课题研究实施方案",
-            "某科研课题中期阶段汇报",
+        cases = (
+            ("某科研课题项目建议书", "unknown", None),
+            ("某科研课题项目实施阶段汇报", "unknown", None),
+            (
+                "某科研课题研究实施方案",
+                "research_project",
+                "scene.architecture_design",
+            ),
+            (
+                "某科研课题中期阶段汇报",
+                "research_project",
+                "scene.presentation",
+            ),
         )
 
-        for title in titles:
+        for title, expected_domain, expected_contract in cases:
             with self.subTest(title=title):
                 request = deepcopy(self.fixture["cases"][1]["request"])
                 request["task"]["instruction"] = (
@@ -477,7 +912,8 @@ class PerceptionDecisionTests(unittest.TestCase):
                 decision = self.run_decision(request)["decision"]
 
                 self.assertEqual(
-                    "unknown", decision["business_domain"]["value"]
+                    expected_domain,
+                    decision["business_domain"]["value"],
                 )
                 self.assertNotIn(
                     "engineering_construction",
@@ -488,15 +924,21 @@ class PerceptionDecisionTests(unittest.TestCase):
                         ]["candidates"]
                     },
                 )
-                self.assertEqual(
-                    [
-                        "common.protected_spans",
-                        "common.evidence_policy",
-                        "common.statement_force_policy",
-                        "common.quality_gate_h1_h6",
-                    ],
-                    decision["load_contracts"],
-                )
+                if expected_domain == "unknown":
+                    self.assertEqual(
+                        [
+                            "common.protected_spans",
+                            "common.evidence_policy",
+                            "common.statement_force_policy",
+                            "common.quality_gate_h1_h6",
+                        ],
+                        decision["load_contracts"],
+                    )
+                else:
+                    self.assertIn(
+                        expected_contract,
+                        decision["load_contracts"],
+                    )
 
     def test_research_context_outside_title_overrides_engineering_title_route(self):
         cases = (
