@@ -36,6 +36,9 @@ python3 "$HOME/.agents/skills/skill-creator/scripts/quick_validate.py" .
 
 ## Results
 
+- Foundation 04 当前根目录完整单元测试为 177 项通过、0 项失败；治理运行域识别覆盖、最高层感知入口、公开合同链接和既有稳定行为均通过。
+- Foundation 04 新增 9 个确定性合成治理材料案例、8 项最高层接缝外部行为测试和 1 项治理参考合同测试，覆盖制度制定、发布执行、检查评估、应急处置和修订位置，以及管理制度、管理办法、操作规程、应急预案、演练方案、专项处置方案、治理汇报、治理评审和制度修订材料。
+- 治理汇报同时输出 `governance_operation`、`inspection_evaluation` 与 `presentation`；制度正文、操作规程和应急预案保持不同材料子类型。明确局部制度任务加载既有安全制度场景、保护项、陈述效力与 H1—H6，整份新建只声明 `recognition_coverage` 并进入写作准备单。上位名称只返回带依据候选并进入 `conservative_audit`，正文仅引用治理材料不会改变主材料身份；不补造组织职责或制度效力。合成夹具继续标记为 `deterministic-synthetic-fixture`、`model_execution: false`，不构成深度支持、联审支持、前向验证或真实治理材料表现证据。
 - Foundation 03 当前根目录完整单元测试为 168 项通过、0 项失败；科研课题域识别覆盖、最高层感知入口、公开合同链接和既有稳定行为均通过。
 - Foundation 03 新增 7 个确定性合成科研材料案例、10 项最高层接缝外部行为测试和 1 项科研参考合同测试，覆盖科研申报书、可研论证、任务书、研究实施方案、中期汇报、中期检查和结题验收材料，以及规格原词、无“报告”后缀和“明确科研归属＋泛称标题”的组合识别。
 - 科研实施方案与工程实施方案保持不同业务域和生命周期；科研中期汇报同时输出 `midterm_review` 与 `presentation`；结题验收输出科研域、`final_acceptance` 和科研材料子类型。上位阶段名称及业务域冲突只返回带依据候选并进入 `conservative_audit`；正文通过“依据、引用、参照、参考、根据、按照、基于、见”引用科研材料时不会改变主材料身份。明确局部任务只声明 `basic_support`，整份新建只声明 `recognition_coverage` 并进入写作准备单，不补造科研管理要求。合成夹具继续标记为 `deterministic-synthetic-fixture`、`model_execution: false`，不构成深度支持、联审支持、前向验证或真实科研材料表现证据。

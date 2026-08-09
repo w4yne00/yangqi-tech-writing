@@ -272,6 +272,98 @@
       }
     }
   ],
+  "governance_operation_cases": [
+    {
+      "case_id": "FOUNDATION-04-MANAGEMENT-POLICY",
+      "title": "网络安全管理制度",
+      "instruction": "审阅这份网络安全管理制度，只标出问题。",
+      "expected": {
+        "lifecycle_position": "policy_development",
+        "document_scene": "security_policy",
+        "material_subtype": "management_policy"
+      }
+    },
+    {
+      "case_id": "FOUNDATION-04-MANAGEMENT-MEASURES",
+      "title": "网络安全管理办法",
+      "instruction": "审阅这份网络安全管理办法，只标出问题。",
+      "expected": {
+        "lifecycle_position": "policy_development",
+        "document_scene": "security_policy",
+        "material_subtype": "management_measures"
+      }
+    },
+    {
+      "case_id": "FOUNDATION-04-OPERATING-PROCEDURE",
+      "title": "安全事件报告操作规程",
+      "instruction": "审阅这份安全事件报告操作规程，只标出问题。",
+      "expected": {
+        "lifecycle_position": "publication_execution",
+        "document_scene": "security_policy",
+        "material_subtype": "operating_procedure"
+      }
+    },
+    {
+      "case_id": "FOUNDATION-04-EMERGENCY-PLAN",
+      "title": "网络安全事件应急预案",
+      "instruction": "审阅这份网络安全事件应急预案，只标出问题。",
+      "expected": {
+        "lifecycle_position": "emergency_response",
+        "document_scene": "security_policy",
+        "material_subtype": "emergency_plan"
+      }
+    },
+    {
+      "case_id": "FOUNDATION-04-EMERGENCY-DRILL-PLAN",
+      "title": "网络安全应急演练方案",
+      "instruction": "审阅这份网络安全应急演练方案，只标出问题。",
+      "expected": {
+        "lifecycle_position": "emergency_response",
+        "document_scene": "security_policy",
+        "material_subtype": "emergency_drill_plan"
+      }
+    },
+    {
+      "case_id": "FOUNDATION-04-SPECIAL-RESPONSE-PLAN",
+      "title": "勒索软件专项处置方案",
+      "instruction": "审阅这份勒索软件专项处置方案，只标出问题。",
+      "expected": {
+        "lifecycle_position": "emergency_response",
+        "document_scene": "security_policy",
+        "material_subtype": "special_response_plan"
+      }
+    },
+    {
+      "case_id": "FOUNDATION-04-GOVERNANCE-REPORT",
+      "title": "网络安全治理运行汇报",
+      "instruction": "审阅这份网络安全治理运行汇报，只标出问题。",
+      "expected": {
+        "lifecycle_position": "inspection_evaluation",
+        "document_scene": "presentation",
+        "material_subtype": "governance_report"
+      }
+    },
+    {
+      "case_id": "FOUNDATION-04-GOVERNANCE-REVIEW",
+      "title": "网络安全治理评审材料",
+      "instruction": "审阅这份网络安全治理评审材料，只标出问题。",
+      "expected": {
+        "lifecycle_position": "inspection_evaluation",
+        "document_scene": "review_acceptance",
+        "material_subtype": "governance_review_material"
+      }
+    },
+    {
+      "case_id": "FOUNDATION-04-POLICY-REVISION",
+      "title": "网络安全管理制度修订说明",
+      "instruction": "审阅这份网络安全管理制度修订说明，只标出问题。",
+      "expected": {
+        "lifecycle_position": "revision",
+        "document_scene": "security_policy",
+        "material_subtype": "policy_revision"
+      }
+    }
+  ],
   "material_set_cases": [
     {
       "case_id": "FOUNDATION-08-RELATION-TYPES",

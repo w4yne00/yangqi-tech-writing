@@ -78,6 +78,162 @@ class PerceptionDecisionTests(unittest.TestCase):
         )
         return case, self.run_decision(request)["decision"]
 
+    def run_governance_case(self, case_id):
+        case = next(
+            item
+            for item in self.fixture["governance_operation_cases"]
+            if item["case_id"] == case_id
+        )
+        request = deepcopy(self.fixture["cases"][0]["request"])
+        request["task"]["instruction"] = case["instruction"]
+        request["material_view"]["title"] = case["title"]
+        request["material_view"]["segments"][0]["text"] = (
+            "本合成片段只提供材料识别所需的最小信息。"
+        )
+        return case, self.run_decision(request)["decision"]
+
+    def test_management_policy_uses_governance_domain_and_policy_contract(self):
+        case, decision = self.run_governance_case(
+            "FOUNDATION-04-MANAGEMENT-POLICY"
+        )
+
+        self.assertEqual(
+            "governance_operation", decision["business_domain"]["value"]
+        )
+        for dimension in (
+            "lifecycle_position",
+            "document_scene",
+            "material_subtype",
+        ):
+            self.assertEqual(
+                case["expected"][dimension], decision[dimension]["value"]
+            )
+            self.assertEqual("explicit", decision[dimension]["confidence"])
+        self.assertEqual("basic_support", decision["support_level"])
+        self.assertEqual("quick_path", decision["processing_mode"])
+        self.assertEqual(
+            [
+                "common.protected_spans",
+                "common.evidence_policy",
+                "common.statement_force_policy",
+                "scene.security_policy",
+                "common.quality_gate_h1_h6",
+            ],
+            decision["load_contracts"],
+        )
+
+    def test_governance_catalog_preserves_lifecycle_scene_and_subtype(self):
+        for case in self.fixture["governance_operation_cases"]:
+            with self.subTest(case_id=case["case_id"]):
+                _, decision = self.run_governance_case(case["case_id"])
+
+                self.assertEqual(
+                    "governance_operation",
+                    decision["business_domain"]["value"],
+                )
+                for dimension in (
+                    "lifecycle_position",
+                    "document_scene",
+                    "material_subtype",
+                ):
+                    self.assertEqual(
+                        case["expected"][dimension],
+                        decision[dimension]["value"],
+                    )
+                self.assertEqual(
+                    "basic_support", decision["support_level"]
+                )
+                self.assertEqual("quick_path", decision["processing_mode"])
+                self.assertNotIn(
+                    "deep_support",
+                    json.dumps(decision, ensure_ascii=False),
+                )
+
+    def test_governance_report_keeps_domain_and_presentation_scene(self):
+        _, decision = self.run_governance_case(
+            "FOUNDATION-04-GOVERNANCE-REPORT"
+        )
+
+        self.assertEqual(
+            "governance_operation", decision["business_domain"]["value"]
+        )
+        self.assertEqual(
+            "inspection_evaluation",
+            decision["lifecycle_position"]["value"],
+        )
+        self.assertEqual("presentation", decision["document_scene"]["value"])
+        self.assertEqual(
+            "governance_report", decision["material_subtype"]["value"]
+        )
+        self.assertIn("scene.presentation", decision["load_contracts"])
+        self.assertNotIn("scene.security_policy", decision["load_contracts"])
+
+    def test_unclear_governance_material_uses_conservative_base_contract(self):
+        request = deepcopy(self.fixture["cases"][1]["request"])
+        request["task"]["instruction"] = (
+            "审阅这份治理运行材料；具体类型、组织职责和制度效力均未确认。"
+        )
+        request["material_view"]["title"] = "治理运行材料"
+        request["material_view"]["segments"][0]["text"] = (
+            "本材料未提供能够确认生命周期、文种或材料子类型的信息。"
+        )
+
+        decision = self.run_decision(request)["decision"]
+
+        self.assertEqual("unknown", decision["business_domain"]["value"])
+        self.assertEqual(
+            {"governance_operation"},
+            {
+                item["value"]
+                for item in decision["business_domain"]["candidates"]
+            },
+        )
+        self.assertEqual("unknown", decision["material_subtype"]["value"])
+        self.assertEqual("recognition_coverage", decision["support_level"])
+        self.assertEqual("conservative_audit", decision["processing_mode"])
+        self.assertEqual(
+            [
+                "common.protected_spans",
+                "common.evidence_policy",
+                "common.statement_force_policy",
+                "common.quality_gate_h1_h6",
+            ],
+            decision["load_contracts"],
+        )
+        self.assertEqual([], decision["claim_decisions"])
+        self.assertNotIn(
+            "approved_boundary",
+            json.dumps(decision, ensure_ascii=False),
+        )
+
+    def test_recognized_governance_document_creation_uses_two_stage_only(self):
+        request = deepcopy(self.fixture["cases"][0]["request"])
+        request["task"] = {
+            "instruction": "新建一份完整的网络安全管理制度。",
+            "mode": "create",
+            "scope": "document",
+        }
+        request["material_view"]["title"] = "网络安全管理制度"
+        request["material_view"]["segments"][0]["text"] = (
+            "本合成片段只提供材料识别所需的最小信息。"
+        )
+
+        decision = self.run_decision(request)["decision"]
+
+        self.assertEqual(
+            "governance_operation", decision["business_domain"]["value"]
+        )
+        self.assertEqual(
+            "management_policy", decision["material_subtype"]["value"]
+        )
+        self.assertEqual("recognition_coverage", decision["support_level"])
+        self.assertEqual("two_stage", decision["processing_mode"])
+        self.assertIn("writing_preparation_sheet", decision)
+        self.assertIn(
+            "common.writing_preparation", decision["load_contracts"]
+        )
+        self.assertNotIn("scene.security_policy", decision["load_contracts"])
+
     def test_research_application_uses_research_lifecycle(self):
         case, decision = self.run_research_case(
             "FOUNDATION-03-RESEARCH-APPLICATION"
@@ -676,7 +832,7 @@ class PerceptionDecisionTests(unittest.TestCase):
         self.assertEqual("recognition_coverage", decision["support_level"])
         self.assertEqual("conservative_audit", decision["processing_mode"])
 
-    def test_research_material_reference_does_not_become_main_identity(self):
+    def test_research_reference_does_not_override_governance_identity(self):
         for connector in (
             "依据",
             "引用",
@@ -702,10 +858,50 @@ class PerceptionDecisionTests(unittest.TestCase):
                 decision = self.run_decision(request)["decision"]
 
                 self.assertEqual(
-                    "unknown", decision["business_domain"]["value"]
+                    "governance_operation",
+                    decision["business_domain"]["value"],
                 )
                 self.assertNotEqual(
                     "research_task_agreement",
+                    decision["material_subtype"]["value"],
+                )
+                self.assertEqual(
+                    "management_policy",
+                    decision["material_subtype"]["value"],
+                )
+                self.assertEqual("basic_support", decision["support_level"])
+                self.assertEqual("quick_path", decision["processing_mode"])
+
+    def test_governance_material_reference_does_not_become_main_identity(self):
+        for connector in (
+            "依据",
+            "引用",
+            "参照",
+            "参考",
+            "根据",
+            "按照",
+            "基于",
+            "见",
+        ):
+            with self.subTest(connector=connector):
+                request = deepcopy(self.fixture["cases"][1]["request"])
+                request["task"]["instruction"] = (
+                    "审阅这份风险评估报告，只标出问题。"
+                )
+                request["material_view"]["title"] = "风险评估报告"
+                request["material_view"]["segments"][0]["text"] = (
+                    "本报告{}某网络安全管理制度开展评估。".format(
+                        connector
+                    )
+                )
+
+                decision = self.run_decision(request)["decision"]
+
+                self.assertEqual(
+                    "unknown", decision["business_domain"]["value"]
+                )
+                self.assertNotEqual(
+                    "management_policy",
                     decision["material_subtype"]["value"],
                 )
                 self.assertEqual(
@@ -714,6 +910,43 @@ class PerceptionDecisionTests(unittest.TestCase):
                 self.assertEqual(
                     "conservative_audit", decision["processing_mode"]
                 )
+
+    def test_long_governance_reference_does_not_become_main_identity(self):
+        request = deepcopy(self.fixture["cases"][1]["request"])
+        request["task"]["instruction"] = (
+            "审阅这份风险评估报告，只标出问题。"
+        )
+        request["material_view"]["title"] = "风险评估报告"
+        request["material_view"]["segments"][0]["text"] = (
+            "本报告依据修订后的某集团总部及全部二级三级所属单位网络安全与"
+            "数据安全统一运营管理制度开展评估。"
+        )
+
+        decision = self.run_decision(request)["decision"]
+
+        self.assertEqual("unknown", decision["business_domain"]["value"])
+        self.assertEqual("unknown", decision["material_subtype"]["value"])
+        self.assertEqual("conservative_audit", decision["processing_mode"])
+
+    def test_connector_before_task_target_does_not_hide_governance_identity(self):
+        request = deepcopy(self.fixture["cases"][0]["request"])
+        request["task"]["instruction"] = (
+            "请根据要求核查这份网络安全管理制度，只标出问题。"
+        )
+        request["material_view"]["title"] = "制度文件"
+        request["material_view"]["segments"][0]["text"] = (
+            "本合成片段只提供材料识别所需的最小信息。"
+        )
+
+        decision = self.run_decision(request)["decision"]
+
+        self.assertEqual(
+            "governance_operation", decision["business_domain"]["value"]
+        )
+        self.assertEqual(
+            "management_policy", decision["material_subtype"]["value"]
+        )
+        self.assertEqual("quick_path", decision["processing_mode"])
 
     def test_engineering_plan_title_wins_over_research_plan_reference(self):
         request = deepcopy(self.fixture["cases"][0]["request"])

@@ -22,6 +22,7 @@ REQUIRED_FILES = [
     "references/writing-preparation.md",
     "references/project-context.md",
     "references/material-contract-evidence.md",
+    "references/governance-operation.md",
     "references/research-project.md",
     "references/ai-trace-patterns.md",
     "references/structural-antipatterns.md",

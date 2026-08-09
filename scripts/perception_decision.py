@@ -212,6 +212,92 @@ RESEARCH_MATERIAL_ROUTES = (
         "material_subtype": "research_final_acceptance",
     },
 )
+GOVERNANCE_MATERIAL_ROUTES = (
+    {
+        "signals": ("制度修订说明", "制度修订材料"),
+        "lifecycle_position": "revision",
+        "document_scene": "security_policy",
+        "material_subtype": "policy_revision",
+    },
+    {
+        "signals": ("管理制度",),
+        "lifecycle_position": "policy_development",
+        "document_scene": "security_policy",
+        "material_subtype": "management_policy",
+    },
+    {
+        "signals": ("管理办法",),
+        "lifecycle_position": "policy_development",
+        "document_scene": "security_policy",
+        "material_subtype": "management_measures",
+    },
+    {
+        "signals": ("操作规程",),
+        "lifecycle_position": "publication_execution",
+        "document_scene": "security_policy",
+        "material_subtype": "operating_procedure",
+    },
+    {
+        "signals": ("应急预案",),
+        "lifecycle_position": "emergency_response",
+        "document_scene": "security_policy",
+        "material_subtype": "emergency_plan",
+    },
+    {
+        "signals": ("应急演练方案", "演练方案"),
+        "lifecycle_position": "emergency_response",
+        "document_scene": "security_policy",
+        "material_subtype": "emergency_drill_plan",
+    },
+    {
+        "signals": ("专项处置方案",),
+        "lifecycle_position": "emergency_response",
+        "document_scene": "security_policy",
+        "material_subtype": "special_response_plan",
+    },
+    {
+        "signals": ("治理运行汇报", "治理汇报"),
+        "lifecycle_position": "inspection_evaluation",
+        "document_scene": "presentation",
+        "material_subtype": "governance_report",
+    },
+    {
+        "signals": ("治理评审材料", "制度评审材料"),
+        "lifecycle_position": "inspection_evaluation",
+        "document_scene": "review_acceptance",
+        "material_subtype": "governance_review_material",
+    },
+)
+GOVERNANCE_MATERIAL_SIGNAL_PATTERN = "|".join(
+    re.escape(signal)
+    for signal in sorted(
+        {
+            signal
+            for route in GOVERNANCE_MATERIAL_ROUTES
+            for signal in route["signals"]
+        },
+        key=len,
+        reverse=True,
+    )
+)
+GOVERNANCE_MATERIAL_REFERENCE_PATTERNS = (
+    re.compile(
+        r"(?:依据|引用|参照|参考|根据|按照|基于|见)\s*"
+        r"(?:了)?[^，。；：\n]*?(?:"
+        + GOVERNANCE_MATERIAL_SIGNAL_PATTERN
+        + r")"
+    ),
+)
+GOVERNANCE_TASK_TARGET_PATTERN = re.compile(
+    r"(?:这份|该份|本份|这部|该部|本部|这项|该项|本项)"
+    r"(?:(?!依据|引用|参照|参考|根据|按照|基于|见)"
+    r"[^，。；：\n])*?(?:"
+    + GOVERNANCE_MATERIAL_SIGNAL_PATTERN
+    + r")"
+)
+GOVERNANCE_REFERENCE_CONNECTOR_PATTERN = re.compile(
+    r"(?:依据|引用|参照|参考|根据|按照|基于|见)\s*$"
+)
 RESEARCH_CONTEXTUAL_SIGNALS = {
     "research_application": ("申报书",),
     "research_feasibility_assessment": (
@@ -319,6 +405,7 @@ SCENE_CONTRACTS = {
     "feasibility_study": "scene.feasibility_study",
     "presentation": "scene.presentation",
     "review_acceptance": "scene.review_acceptance",
+    "security_policy": "scene.security_policy",
     "technical_spec": "scene.technical_spec",
 }
 DESIGN_SIGNALS = ("设计",)
@@ -472,6 +559,81 @@ def matching_research_routes(text, include_contextual=False):
         ):
             routes.append(route)
     return routes
+
+
+def strip_governance_material_references(text):
+    remaining_text = text
+    for pattern in GOVERNANCE_MATERIAL_REFERENCE_PATTERNS:
+        remaining_text = pattern.sub("", remaining_text)
+    return remaining_text
+
+
+def matching_governance_routes(text, strip_references=True):
+    material_text = (
+        strip_governance_material_references(text)
+        if strip_references
+        else text
+    )
+    matches = []
+    for route in GOVERNANCE_MATERIAL_ROUTES:
+        active_signals = [
+            signal
+            for signal in route["signals"]
+            if signal in material_text
+        ]
+        if active_signals and not has_negated_material_signal(
+            material_text, route["signals"]
+        ):
+            matches.append((max(map(len, active_signals)), route))
+    if not matches:
+        return []
+    longest_signal = max(length for length, _ in matches)
+    return [
+        route for length, route in matches if length == longest_signal
+    ]
+
+
+def matching_governance_task_routes(text):
+    for match in GOVERNANCE_TASK_TARGET_PATTERN.finditer(text):
+        clause_start = max(
+            text.rfind(separator, 0, match.start())
+            for separator in "，。；：\n"
+        )
+        clause_prefix = text[clause_start + 1 : match.start()]
+        if GOVERNANCE_REFERENCE_CONNECTOR_PATTERN.search(clause_prefix):
+            continue
+        routes = matching_governance_routes(
+            match.group(0), strip_references=False
+        )
+        if routes:
+            return routes
+    return matching_governance_routes(text)
+
+
+def resolve_governance_identity_routes(task, view):
+    """Resolve governance material identity before lower-priority text."""
+    title_routes = matching_governance_routes(
+        view["title"], strip_references=False
+    )
+    if title_routes:
+        remaining_title_routes = [
+            route
+            for route in title_routes
+            if not has_negated_material_signal(
+                task["instruction"], route["signals"]
+            )
+        ]
+        if remaining_title_routes:
+            return remaining_title_routes
+        return matching_governance_task_routes(task["instruction"])
+
+    task_routes = matching_governance_task_routes(task["instruction"])
+    if task_routes:
+        return task_routes
+    body_routes = matching_governance_routes(view["searchable_text"])
+    if body_routes:
+        return body_routes
+    return []
 
 
 def resolve_research_identity_routes(task, view):
@@ -1480,10 +1642,20 @@ def build_unclear_decision(task, text):
     has_cross_domain_engineering_plan_signal = (
         has_research_marker and "工程实施方案" in text
     )
+    has_governance_operation_material_signal = (
+        "治理运行" in text and "材料" in text
+    )
     domain_candidates = []
     lifecycle_candidates = []
     scene_candidates = []
     material_subtype_candidates = []
+    if has_governance_operation_material_signal:
+        domain_candidates.append(
+            candidate(
+                "governance_operation",
+                "材料明确属于治理运行语境，但未提供足够信息确认生命周期、文种或材料子类型。",
+            )
+        )
     if has_design_signal:
         domain_candidates.append(
             candidate(
@@ -2033,11 +2205,19 @@ def build_perception_decision(request):
         [task["instruction"], view["title"], view["searchable_text"]]
     )
 
+    governance_title_routes = matching_governance_routes(
+        view["title"], strip_references=False
+    )
     research_title_routes = matching_research_routes(view["title"])
     engineering_title_routes = matching_engineering_routes(view["title"])
+    governance_routes = resolve_governance_identity_routes(task, view)
     research_routes = resolve_research_identity_routes(task, view)
     matching_routes = resolve_engineering_identity_routes(task, view)
-    if len(research_title_routes) == 1 and len(research_routes) == 1:
+    if len(governance_title_routes) == 1 and len(governance_routes) == 1:
+        decision = build_explicit_domain_decision(
+            task, governance_routes[0], "governance_operation"
+        )
+    elif len(research_title_routes) == 1 and len(research_routes) == 1:
         decision = build_explicit_domain_decision(
             task, research_routes[0], "research_project"
         )
@@ -2048,6 +2228,10 @@ def build_perception_decision(request):
     elif len(research_routes) == 1:
         decision = build_explicit_domain_decision(
             task, research_routes[0], "research_project"
+        )
+    elif len(governance_routes) == 1:
+        decision = build_explicit_domain_decision(
+            task, governance_routes[0], "governance_operation"
         )
     elif len(matching_routes) == 1:
         decision = build_explicit_domain_decision(
@@ -2081,7 +2265,11 @@ def build_perception_decision(request):
         task["mode"] == "create"
         and task["scope"] == "document"
         and decision["business_domain"]["value"]
-        in {"engineering_construction", "research_project"}
+        in {
+            "engineering_construction",
+            "research_project",
+            "governance_operation",
+        }
         and decision["material_subtype"]["value"] != "unknown"
     )
     if complete_plan_creation or material_set is not None:

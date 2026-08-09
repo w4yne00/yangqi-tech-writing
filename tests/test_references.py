@@ -6,6 +6,32 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class ReferenceContractTests(unittest.TestCase):
+    def test_governance_operation_reference_defines_catalog_and_boundaries(self):
+        text = (ROOT / "references/governance-operation.md").read_text(
+            encoding="utf-8"
+        )
+        for phrase in [
+            "`policy_development`",
+            "`publication_execution`",
+            "`inspection_evaluation`",
+            "`emergency_response`",
+            "`revision`",
+            "`management_policy`",
+            "`management_measures`",
+            "`operating_procedure`",
+            "`emergency_plan`",
+            "`emergency_drill_plan`",
+            "`special_response_plan`",
+            "`governance_report`",
+            "`governance_review_material`",
+            "`policy_revision`",
+            "`recognition_coverage`",
+            "`basic_support`",
+            "H3",
+            "不推断组织职责或制度效力",
+        ]:
+            self.assertIn(phrase, text)
+
     def test_research_project_reference_defines_catalog_and_support_boundary(self):
         text = (ROOT / "references/research-project.md").read_text(
             encoding="utf-8"
