@@ -36,6 +36,9 @@ python3 "$HOME/.agents/skills/skill-creator/scripts/quick_validate.py" .
 
 ## Results
 
+- Foundation 05 当前根目录完整单元测试为 186 项通过、0 项失败；七类场景正向识别、复合材料联合路由、公开合同链接和既有稳定行为均通过。
+- Foundation 05 新增 7 个七类场景正向案例、2 个确定性合成复合材料案例、8 项最高层接缝外部行为测试和 1 项复合路由参考合同测试。初步设计评审汇报保留 `engineering_construction`、`design`、`presentation` 主场景和 `review_acceptance` 局部场景；科研课题结题验收汇报保留 `research_project`、`final_acceptance` 及同一复合关系。
+- 复合路由分别输出主、局部场景的适用内容和保护边界，局部内容采用更严格的 `in_place`；缺少专用材料合同时在新建、续写和局部任务中均加载两个既有场景基础合同，支持级别保持 `recognition_coverage` 或 `basic_support`。初设正文、科研结题验收材料、工程结题验收汇报及仅引用复合材料名称的近失配仍保持原身份。合成夹具标记为 `deterministic-synthetic-fixture`、`model_execution: false`，不构成深度支持、联审支持、前向验证或真实复合材料表现证据。
 - Foundation 04 当前根目录完整单元测试为 177 项通过、0 项失败；治理运行域识别覆盖、最高层感知入口、公开合同链接和既有稳定行为均通过。
 - Foundation 04 新增 9 个确定性合成治理材料案例、8 项最高层接缝外部行为测试和 1 项治理参考合同测试，覆盖制度制定、发布执行、检查评估、应急处置和修订位置，以及管理制度、管理办法、操作规程、应急预案、演练方案、专项处置方案、治理汇报、治理评审和制度修订材料。
 - 治理汇报同时输出 `governance_operation`、`inspection_evaluation` 与 `presentation`；制度正文、操作规程和应急预案保持不同材料子类型。明确局部制度任务加载既有安全制度场景、保护项、陈述效力与 H1—H6，整份新建只声明 `recognition_coverage` 并进入写作准备单。上位名称只返回带依据候选并进入 `conservative_audit`，正文仅引用治理材料不会改变主材料身份；不补造组织职责或制度效力。合成夹具继续标记为 `deterministic-synthetic-fixture`、`model_execution: false`，不构成深度支持、联审支持、前向验证或真实治理材料表现证据。

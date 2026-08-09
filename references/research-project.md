@@ -13,8 +13,9 @@
 | `midterm_review` | `research_interim_report` | 科研课题中期汇报 | `presentation` |
 | `midterm_review` | `research_interim_inspection` | 科研课题中期检查及其报告 | `review_acceptance` |
 | `final_acceptance` | `research_final_acceptance` | 科研课题结题验收材料、结题验收报告 | `review_acceptance` |
+| `final_acceptance` | `research_final_acceptance_presentation` | 科研课题结题验收汇报、科研结题验收汇报 | 主 `presentation`＋局部 `review_acceptance` |
 
-该目录保留正交维度：科研中期汇报的生命周期位置为 `midterm_review`，文种场景仍为 `presentation`；中期检查处于同一科研生命周期位置，但使用 `review_acceptance`。科研结题验收与工程验收可以共享评审验收基础场景，但业务域、生命周期和材料子类型不得互换。
+该目录保留正交维度：科研中期汇报的生命周期位置为 `midterm_review`，文种场景仍为 `presentation`；中期检查处于同一科研生命周期位置，但使用 `review_acceptance`。科研结题验收与工程验收可以共享评审验收基础场景，但业务域、生命周期和材料子类型不得互换；结题验收汇报以 `presentation` 为主场景，并在验收结论等局部内容加载 `review_acceptance`。
 
 ## 近失配与降级
 

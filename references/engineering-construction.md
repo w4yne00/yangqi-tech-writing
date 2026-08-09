@@ -9,6 +9,7 @@
 | `initiation` | `project_proposal` | 项目建议书 | `feasibility_study` |
 | `initiation` | `feasibility_study` | 工程可研报告、可行性研究报告 | `feasibility_study` |
 | `design` | `preliminary_design` | 初步设计、初设 | `architecture_design` |
+| `design` | `preliminary_design_review_presentation` | 初步设计评审汇报、初设评审汇报 | 主 `presentation`＋局部 `review_acceptance` |
 | `design` | `detailed_design` | 详细设计、详设 | `architecture_design` |
 | `design` | `overall_architecture` | 总体架构 | `architecture_design` |
 | `procurement` | `technical_specification` | 技术规范书、招标或采购技术要求 | `technical_spec` |

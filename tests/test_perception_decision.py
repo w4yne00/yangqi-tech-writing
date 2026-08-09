@@ -51,23 +51,20 @@ class PerceptionDecisionTests(unittest.TestCase):
         return self.run_decision(request)["decision"]
 
     def run_engineering_case(self, case_id):
-        case = next(
-            item
-            for item in self.fixture["engineering_construction_cases"]
-            if item["case_id"] == case_id
+        return self.run_fixture_case(
+            "engineering_construction_cases", case_id
         )
-        request = deepcopy(self.fixture["cases"][0]["request"])
-        request["task"]["instruction"] = case["instruction"]
-        request["material_view"]["title"] = case["title"]
-        request["material_view"]["segments"][0]["text"] = (
-            "本合成片段只提供材料识别所需的最小信息。"
-        )
-        return case, self.run_decision(request)["decision"]
 
     def run_research_case(self, case_id):
+        return self.run_fixture_case("research_project_cases", case_id)
+
+    def run_governance_case(self, case_id):
+        return self.run_fixture_case("governance_operation_cases", case_id)
+
+    def run_fixture_case(self, collection, case_id):
         case = next(
             item
-            for item in self.fixture["research_project_cases"]
+            for item in self.fixture[collection]
             if item["case_id"] == case_id
         )
         request = deepcopy(self.fixture["cases"][0]["request"])
@@ -78,19 +75,225 @@ class PerceptionDecisionTests(unittest.TestCase):
         )
         return case, self.run_decision(request)["decision"]
 
-    def run_governance_case(self, case_id):
-        case = next(
-            item
-            for item in self.fixture["governance_operation_cases"]
-            if item["case_id"] == case_id
+    def test_seven_existing_scenes_have_positive_recognition_cases(self):
+        observed_scenes = set()
+
+        for case in self.fixture["scene_positive_cases"]:
+            with self.subTest(case_id=case["case_id"]):
+                _, decision = self.run_fixture_case(
+                    "scene_positive_cases", case["case_id"]
+                )
+                scene = case["expected_scene"]
+                observed_scenes.add(scene)
+
+                self.assertEqual(scene, decision["document_scene"]["value"])
+                self.assertEqual("explicit", decision["document_scene"]["confidence"])
+                self.assertIn("scene.{}".format(scene), decision["load_contracts"])
+                self.assertEqual("basic_support", decision["support_level"])
+
+        self.assertEqual(
+            {
+                "feasibility_study",
+                "architecture_design",
+                "technical_spec",
+                "bid_response",
+                "security_policy",
+                "presentation",
+                "review_acceptance",
+            },
+            observed_scenes,
         )
-        request = deepcopy(self.fixture["cases"][0]["request"])
-        request["task"]["instruction"] = case["instruction"]
-        request["material_view"]["title"] = case["title"]
-        request["material_view"]["segments"][0]["text"] = (
-            "本合成片段只提供材料识别所需的最小信息。"
+
+    def test_composite_materials_preserve_domain_lifecycle_and_scene_roles(self):
+        for case in self.fixture["composite_scene_cases"]:
+            with self.subTest(case_id=case["case_id"]):
+                _, decision = self.run_fixture_case(
+                    "composite_scene_cases", case["case_id"]
+                )
+                expected = case["expected"]
+
+                for dimension in (
+                    "business_domain",
+                    "lifecycle_position",
+                    "document_scene",
+                    "material_subtype",
+                ):
+                    self.assertEqual(
+                        expected[dimension], decision[dimension]["value"]
+                    )
+                    self.assertEqual(
+                        "explicit", decision[dimension]["confidence"]
+                    )
+
+                routing = decision["composite_routing"]
+                self.assertEqual(
+                    expected["primary_scene"],
+                    routing["primary_scene"]["value"],
+                )
+                self.assertEqual(
+                    expected["local_scene"],
+                    routing["local_scene"]["value"],
+                )
+                self.assertTrue(
+                    routing["primary_scene"]["applies_to_content"]
+                )
+                self.assertTrue(
+                    routing["local_scene"]["applies_to_content"]
+                )
+
+    def test_composite_local_scene_uses_the_stricter_boundary(self):
+        for case in self.fixture["composite_scene_cases"]:
+            with self.subTest(case_id=case["case_id"]):
+                _, decision = self.run_fixture_case(
+                    "composite_scene_cases", case["case_id"]
+                )
+                routing = decision["composite_routing"]
+
+                self.assertEqual(
+                    "structural",
+                    routing["primary_scene"]["protection_boundary"],
+                )
+                self.assertEqual(
+                    "in_place",
+                    routing["local_scene"]["protection_boundary"],
+                )
+                self.assertEqual(
+                    "local_scene_content", routing["effective_scope"]
+                )
+                self.assertEqual(
+                    "in_place", routing["effective_protection_boundary"]
+                )
+                self.assertEqual(
+                    "local_scene_has_higher_risk",
+                    routing["protected_reason"],
+                )
+
+    def test_composite_without_dedicated_contract_uses_scene_base_contracts(self):
+        for case in self.fixture["composite_scene_cases"]:
+            with self.subTest(case_id=case["case_id"]):
+                _, decision = self.run_fixture_case(
+                    "composite_scene_cases", case["case_id"]
+                )
+
+                self.assertEqual("basic_support", decision["support_level"])
+                self.assertEqual(
+                    {
+                        "dedicated_material_contract": "unavailable",
+                        "fallback": "scene_base_contracts",
+                    },
+                    decision["contract_resolution"],
+                )
+                self.assertEqual(
+                    [
+                        "common.protected_spans",
+                        "common.evidence_policy",
+                        "common.statement_force_policy",
+                        "scene.presentation",
+                        "scene.review_acceptance",
+                        "common.quality_gate_h1_h6",
+                    ],
+                    decision["load_contracts"],
+                )
+                self.assertNotIn(
+                    "deep_support",
+                    json.dumps(decision, ensure_ascii=False),
+                )
+
+    def test_composite_non_bounded_tasks_apply_declared_scene_fallback(self):
+        tasks = (
+            {
+                "instruction": "新建一份完整的初步设计评审汇报。",
+                "mode": "create",
+                "scope": "document",
+            },
+            {
+                "instruction": "续写这份初步设计评审汇报。",
+                "mode": "continue",
+                "scope": "local",
+            },
         )
-        return case, self.run_decision(request)["decision"]
+
+        for task in tasks:
+            with self.subTest(mode=task["mode"]):
+                request = deepcopy(self.fixture["cases"][0]["request"])
+                request["task"] = task
+                request["material_view"]["title"] = (
+                    "某工程初步设计评审汇报"
+                )
+
+                decision = self.run_decision(request)["decision"]
+
+                self.assertIn("scene.presentation", decision["load_contracts"])
+                self.assertIn(
+                    "scene.review_acceptance", decision["load_contracts"]
+                )
+                self.assertEqual(
+                    "scene_base_contracts",
+                    decision["contract_resolution"]["fallback"],
+                )
+                self.assertNotIn(
+                    "deep_support",
+                    json.dumps(decision, ensure_ascii=False),
+                )
+
+    def test_composite_near_misses_keep_their_original_scene(self):
+        near_misses = (
+            (
+                "engineering_construction_cases",
+                "FOUNDATION-02-PRELIMINARY-DESIGN-NEAR-MISS",
+                "architecture_design",
+            ),
+            (
+                "research_project_cases",
+                "FOUNDATION-03-RESEARCH-FINAL-ACCEPTANCE",
+                "review_acceptance",
+            ),
+        )
+
+        for collection, case_id, expected_scene in near_misses:
+            with self.subTest(case_id=case_id):
+                _, decision = self.run_fixture_case(collection, case_id)
+
+                self.assertEqual(
+                    expected_scene, decision["document_scene"]["value"]
+                )
+                self.assertNotIn("composite_routing", decision)
+
+    def test_composite_reference_does_not_override_current_material(self):
+        requests = []
+
+        titled_request = deepcopy(self.fixture["cases"][0]["request"])
+        titled_request["material_view"]["segments"][0]["text"] = (
+            "本说明书作为后续初设评审汇报的输入材料。"
+        )
+        requests.append(titled_request)
+
+        referenced_request = deepcopy(self.fixture["cases"][1]["request"])
+        referenced_request["task"]["instruction"] = (
+            "审阅这份材料，参照初设评审汇报的版式，只标出问题。"
+        )
+        referenced_request["material_view"]["title"] = "设计说明"
+        requests.append(referenced_request)
+
+        for request in requests:
+            with self.subTest(title=request["material_view"]["title"]):
+                decision = self.run_decision(request)["decision"]
+
+                self.assertNotIn("composite_routing", decision)
+
+    def test_engineering_final_acceptance_presentation_is_not_research(self):
+        request = deepcopy(self.fixture["cases"][1]["request"])
+        request["task"]["instruction"] = (
+            "审阅这份工程结题验收汇报，只标出问题。"
+        )
+        request["material_view"]["title"] = "某工程结题验收汇报"
+
+        decision = self.run_decision(request)["decision"]
+
+        self.assertNotEqual(
+            "research_project", decision["business_domain"]["value"]
+        )
+        self.assertNotIn("composite_routing", decision)
 
     def test_management_policy_uses_governance_domain_and_policy_contract(self):
         case, decision = self.run_governance_case(

@@ -26,5 +26,26 @@ class CompositeRoutingTests(unittest.TestCase):
             self.assertIn(field, section)
         self.assertIn("无需调整", section)
 
+    def test_policy_documents_observable_composite_decision_contract(self):
+        text = (ROOT / "references/composite-routing.md").read_text(
+            encoding="utf-8"
+        )
+        for phrase in (
+            "`composite_routing`",
+            "`primary_scene`",
+            "`local_scene`",
+            "`applies_to_content`",
+            "`protection_boundary`",
+            "`effective_scope`",
+            "`effective_protection_boundary`",
+            "`protected_reason`",
+            "`contract_resolution`",
+            "`scene_base_contracts`",
+            "初步设计评审汇报",
+            "科研课题结题验收汇报",
+            "不声明 `deep_support`",
+        ):
+            self.assertIn(phrase, text)
+
 
 if __name__ == "__main__": unittest.main()

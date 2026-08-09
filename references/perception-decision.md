@@ -27,6 +27,9 @@
 - 科研课题识别须保留科研生命周期与既有文种场景两个正交维度；科研中期汇报不能丢失 `midterm_review` 或 `presentation`，结题验收不能替换为工程建设 `acceptance` 身份。
 - 明确科研课题归属可以与另一输入字段中的申报书、可研论证、任务书、实施方案、中期汇报或中期检查泛称组合识别；“依据、引用、参照、参考、根据、按照、基于、见”科研材料只表示来源关系，不形成当前材料身份。
 - 治理运行识别须保留治理生命周期与既有文种场景两个正交维度；治理汇报不能丢失 `governance_operation`、`inspection_evaluation` 或 `presentation`，制度正文、操作规程和应急预案不得合并为同一材料子类型。
+- 复合材料在顶层 `document_scene` 保留主场景，并通过 `composite_routing` 同时输出主、局部场景各自的适用内容和保护边界。局部规则风险更高时，局部内容采用更严格边界，不把整个材料压成单一场景。
+- 初步设计评审汇报保留 `engineering_construction`、`design` 和 `presentation` 主场景，评审意见与结论加载 `review_acceptance` 局部场景；科研课题结题验收汇报保留 `research_project`、`final_acceptance` 和相同的主/局部场景关系。
+- 复合材料缺少专用材料合同时，`contract_resolution` 明确降级到 `scene_base_contracts`；支持级别仍按任务模式保持 `recognition_coverage` 或 `basic_support`，不声明 `deep_support`。
 - 正文仅以“依据、引用、参照、参考、根据、按照、基于、见”等关系提及治理材料时，不形成当前材料身份；信息不足时不推断组织职责、审批权限或制度效力。
 - 任务模式保持用户授权，不因材料分类改变。
 - 支持级别只声明 `recognition_coverage` 或 `basic_support`。最小切片不声明深度支持、联审支持或前向验证。
@@ -47,7 +50,7 @@
 1. `common.protected_spans`
 2. `common.evidence_policy`
 3. `common.statement_force_policy`
-4. 与材料文种对应的一个既有 `scene.*` 场景合同
+4. 与材料文种对应的一个既有 `scene.*` 场景合同；复合材料再加载局部场景基础合同
 5. `common.quality_gate_h1_h6`
 
 工程建设识别目录覆盖立项、设计、采购、实施、试运行、验收和运营位置，并区分项目建议书、可研、初设、详设、总体架构、技术规范、投标应答、工程实施方案、实施记录、阶段汇报、试运行报告、验收大纲、验收报告和运行维护报告。只有上位阶段名称时，各生命周期位置均返回带依据的候选，不直接确认材料子类型。完整目录及近失配边界见[工程建设域识别覆盖](engineering-construction.md)。

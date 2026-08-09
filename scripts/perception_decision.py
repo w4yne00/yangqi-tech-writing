@@ -19,6 +19,77 @@ QUALITY_CONTRACTS = [
     "common.quality_gate_h1_h6",
 ]
 COMMON_CONTRACTS = CONTENT_CONTRACTS + QUALITY_CONTRACTS
+COMPOSITE_MATERIAL_ROUTES = (
+    {
+        "signals": (
+            "初步设计评审汇报",
+            "初设评审汇报",
+        ),
+        "business_domain": "engineering_construction",
+        "lifecycle_position": "design",
+        "material_subtype": "preliminary_design_review_presentation",
+        "primary_scene": "presentation",
+        "primary_content": (
+            "overall_register",
+            "overall_structure",
+            "summary_density",
+        ),
+        "local_scene": "review_acceptance",
+        "local_content": (
+            "review_opinions",
+            "review_conclusions",
+            "issue_counts",
+            "rectification_responsibilities",
+            "dates",
+        ),
+    },
+    {
+        "signals": (
+            "科研课题结题验收汇报",
+            "科研项目结题验收汇报",
+            "科研结题验收汇报",
+            "课题结题验收汇报",
+        ),
+        "business_domain": "research_project",
+        "lifecycle_position": "final_acceptance",
+        "material_subtype": "research_final_acceptance_presentation",
+        "primary_scene": "presentation",
+        "primary_content": (
+            "overall_register",
+            "overall_structure",
+            "summary_density",
+        ),
+        "local_scene": "review_acceptance",
+        "local_content": (
+            "acceptance_conclusions",
+            "research_outputs",
+            "assessment_indicators",
+            "issue_counts",
+            "rectification_responsibilities",
+            "dates",
+        ),
+    },
+)
+COMPOSITE_MATERIAL_SIGNAL_PATTERN = "|".join(
+    re.escape(signal)
+    for signal in sorted(
+        {
+            signal
+            for route in COMPOSITE_MATERIAL_ROUTES
+            for signal in route["signals"]
+        },
+        key=len,
+        reverse=True,
+    )
+)
+COMPOSITE_MATERIAL_REFERENCE_PATTERNS = (
+    re.compile(
+        r"(?:依据|引用|参照|参考|根据|按照|基于|见)\s*"
+        r"(?:了)?[^，。；：\n]*?(?:"
+        + COMPOSITE_MATERIAL_SIGNAL_PATTERN
+        + r")"
+    ),
+)
 PRELIMINARY_DESIGN_SIGNALS = ("初步设计", "初设")
 ENGINEERING_MATERIAL_ROUTES = (
     {
@@ -494,6 +565,66 @@ def has_negated_material_signal(text, signals):
         ),
     )
     return any(pattern.search(text) for pattern in patterns)
+
+
+def strip_composite_material_references(text):
+    remaining_text = text
+    for pattern in COMPOSITE_MATERIAL_REFERENCE_PATTERNS:
+        remaining_text = pattern.sub("", remaining_text)
+    return remaining_text
+
+
+def matching_composite_routes(text, strip_references=True):
+    material_text = (
+        strip_composite_material_references(text)
+        if strip_references
+        else text
+    )
+    return [
+        route
+        for route in COMPOSITE_MATERIAL_ROUTES
+        if any(signal in material_text for signal in route["signals"])
+        and not has_negated_material_signal(
+            material_text, route["signals"]
+        )
+    ]
+
+
+def resolve_composite_identity_route(task, view):
+    """Resolve an explicit composite material before single-scene routes."""
+    title_routes = matching_composite_routes(
+        view["title"], strip_references=False
+    )
+    remaining_title_routes = [
+        route
+        for route in title_routes
+        if not has_negated_material_signal(
+            task["instruction"], route["signals"]
+        )
+    ]
+    if len(remaining_title_routes) == 1:
+        return remaining_title_routes[0]
+
+    task_routes = matching_composite_routes(task["instruction"])
+    if len(task_routes) == 1:
+        return task_routes[0]
+
+    has_explicit_single_scene_title = any(
+        (
+            matching_governance_routes(
+                view["title"], strip_references=False
+            ),
+            matching_research_routes(view["title"]),
+            matching_engineering_routes(view["title"]),
+        )
+    )
+    if has_explicit_single_scene_title:
+        return None
+
+    body_routes = matching_composite_routes(view["searchable_text"])
+    if len(body_routes) == 1:
+        return body_routes[0]
+    return None
 
 
 def strip_research_material_references(text):
@@ -1570,6 +1701,45 @@ def build_explicit_domain_decision(task, route, business_domain):
     }
 
 
+def build_composite_domain_decision(task, route):
+    primary_scene = route["primary_scene"]
+    local_scene = route["local_scene"]
+    decision = build_explicit_domain_decision(
+        task,
+        {
+            "lifecycle_position": route["lifecycle_position"],
+            "document_scene": primary_scene,
+            "material_subtype": route["material_subtype"],
+        },
+        route["business_domain"],
+    )
+    decision["load_contracts"] = (
+        CONTENT_CONTRACTS
+        + [SCENE_CONTRACTS[primary_scene], SCENE_CONTRACTS[local_scene]]
+        + QUALITY_CONTRACTS
+    )
+    decision["composite_routing"] = {
+        "primary_scene": {
+            "value": primary_scene,
+            "applies_to_content": list(route["primary_content"]),
+            "protection_boundary": "structural",
+        },
+        "local_scene": {
+            "value": local_scene,
+            "applies_to_content": list(route["local_content"]),
+            "protection_boundary": "in_place",
+        },
+        "effective_scope": "local_scene_content",
+        "effective_protection_boundary": "in_place",
+        "protected_reason": "local_scene_has_higher_risk",
+    }
+    decision["contract_resolution"] = {
+        "dedicated_material_contract": "unavailable",
+        "fallback": "scene_base_contracts",
+    }
+    return decision
+
+
 def build_unclear_decision(task, text):
     allows_engineering_candidates = not has_active_research_context(text)
     has_research_marker = has_unnegated_research_marker(text)
@@ -2205,6 +2375,7 @@ def build_perception_decision(request):
         [task["instruction"], view["title"], view["searchable_text"]]
     )
 
+    composite_route = resolve_composite_identity_route(task, view)
     governance_title_routes = matching_governance_routes(
         view["title"], strip_references=False
     )
@@ -2213,7 +2384,9 @@ def build_perception_decision(request):
     governance_routes = resolve_governance_identity_routes(task, view)
     research_routes = resolve_research_identity_routes(task, view)
     matching_routes = resolve_engineering_identity_routes(task, view)
-    if len(governance_title_routes) == 1 and len(governance_routes) == 1:
+    if composite_route is not None:
+        decision = build_composite_domain_decision(task, composite_route)
+    elif len(governance_title_routes) == 1 and len(governance_routes) == 1:
         decision = build_explicit_domain_decision(
             task, governance_routes[0], "governance_operation"
         )

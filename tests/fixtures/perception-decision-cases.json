@@ -364,6 +364,78 @@
       }
     }
   ],
+  "scene_positive_cases": [
+    {
+      "case_id": "FOUNDATION-05-SCENE-FEASIBILITY-STUDY",
+      "title": "某工程可行性研究报告",
+      "instruction": "审阅这份工程可研报告，只标出问题。",
+      "expected_scene": "feasibility_study"
+    },
+    {
+      "case_id": "FOUNDATION-05-SCENE-ARCHITECTURE-DESIGN",
+      "title": "某工程初步设计说明书",
+      "instruction": "审阅这份初设说明书，只标出问题。",
+      "expected_scene": "architecture_design"
+    },
+    {
+      "case_id": "FOUNDATION-05-SCENE-TECHNICAL-SPEC",
+      "title": "某工程招标技术规范书",
+      "instruction": "审阅这份技术规范书，只标出问题。",
+      "expected_scene": "technical_spec"
+    },
+    {
+      "case_id": "FOUNDATION-05-SCENE-BID-RESPONSE",
+      "title": "某工程投标技术应答文件",
+      "instruction": "审阅这份投标技术应答，只标出问题。",
+      "expected_scene": "bid_response"
+    },
+    {
+      "case_id": "FOUNDATION-05-SCENE-SECURITY-POLICY",
+      "title": "网络安全管理制度",
+      "instruction": "审阅这份网络安全管理制度，只标出问题。",
+      "expected_scene": "security_policy"
+    },
+    {
+      "case_id": "FOUNDATION-05-SCENE-PRESENTATION",
+      "title": "某工程建设阶段汇报",
+      "instruction": "审阅这份工程建设阶段汇报，只标出问题。",
+      "expected_scene": "presentation"
+    },
+    {
+      "case_id": "FOUNDATION-05-SCENE-REVIEW-ACCEPTANCE",
+      "title": "某工程验收报告",
+      "instruction": "审阅这份工程验收报告，只标出问题。",
+      "expected_scene": "review_acceptance"
+    }
+  ],
+  "composite_scene_cases": [
+    {
+      "case_id": "FOUNDATION-05-PRELIMINARY-DESIGN-REVIEW-PRESENTATION",
+      "title": "某工程初步设计评审汇报",
+      "instruction": "审阅这份初设评审汇报，只标出问题。",
+      "expected": {
+        "business_domain": "engineering_construction",
+        "lifecycle_position": "design",
+        "document_scene": "presentation",
+        "material_subtype": "preliminary_design_review_presentation",
+        "primary_scene": "presentation",
+        "local_scene": "review_acceptance"
+      }
+    },
+    {
+      "case_id": "FOUNDATION-05-RESEARCH-FINAL-ACCEPTANCE-PRESENTATION",
+      "title": "某科研课题结题验收汇报",
+      "instruction": "审阅这份科研结题验收汇报，只标出问题。",
+      "expected": {
+        "business_domain": "research_project",
+        "lifecycle_position": "final_acceptance",
+        "document_scene": "presentation",
+        "material_subtype": "research_final_acceptance_presentation",
+        "primary_scene": "presentation",
+        "local_scene": "review_acceptance"
+      }
+    }
+  ],
   "material_set_cases": [
     {
       "case_id": "FOUNDATION-08-RELATION-TYPES",

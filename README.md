@@ -107,6 +107,8 @@ cp -R yangqi-tech-writing/references yangqi-tech-writing/scripts "$CODEX_HOME/sk
 
 治理运行域识别覆盖制度制定、发布执行、检查评估、应急处置和修订位置，并区分管理制度、管理办法、操作规程、应急预案、演练方案、专项处置方案、治理汇报、治理评审和制度修订材料。治理汇报同时保留 `governance_operation`、`inspection_evaluation` 和 `presentation`；制度与预案继续使用既有安全制度场景合同及保护项、陈述效力、H3 约束。信息不足时只使用保守基础合同，不推断组织职责或制度效力。具体目录和降级边界见[治理运行域识别覆盖](references/governance-operation.md)。
 
+初步设计评审汇报和科研课题结题验收汇报通过统一决策保留业务域、生命周期与复合文种关系：顶层 `document_scene` 为 `presentation`，`composite_routing` 中的局部场景为 `review_acceptance`。整体汇报内容可使用 `structural`，评审意见、验收结论、问题数量、整改责任和日期等局部内容使用更严格的 `in_place`。缺少专用材料合同时加载两个既有场景基础合同，支持级别按任务模式保持 `recognition_coverage` 或 `basic_support`，不声明深度支持。完整边界见[复合文种路由](references/composite-routing.md)。
+
 材料集关系支持 `governs`、`derives_from`、`supersedes`、`implements`、`verifies`、`conflicts_with` 和 `unclear`。控制与替代只采用批准、签署、用户指定或明确关系，不按文件日期自动覆盖；范围、数量、参数、责任、时间、结论和陈述效力冲突形成阻断项。单材料或上游缺失时会明确标记无法验证跨阶段一致性，不声称联审完成。该兼容切片不表示任何材料组合已经获得联审支持。
 
 已识别的工程建设、科研课题或治理运行完整方案新建，以及提供 `material_set` 的多材料整合任务使用 `two_stage`：第一阶段输出可确认的写作准备单，列出材料、关系、感知维度、控制性材料、事实与判断、假设、冲突、待确认项、追溯摘要和拟加载合同；确认后才进入成稿阶段。文种不明的普通文档新建不会仅因 `scope: document` 被升级。明确的局部改写、审阅和只标问题任务可以使用 `quick_path`，但出现待确认项或阻断项时降级为 `conservative_audit`。快速通道仍执行保护项、证据、陈述效力和 H1—H6。完整合同见[写作准备单与快速通道](references/writing-preparation.md)。
