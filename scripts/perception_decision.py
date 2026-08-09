@@ -583,6 +583,7 @@ MATERIAL_STATUSES = {
     "superseded",
     "unknown",
 }
+TASK_SCOPES = {"document", "local"}
 
 
 class RequestError(ValueError):
@@ -919,6 +920,19 @@ def require_mapping(value, field):
     return value
 
 
+def reject_unknown_fields(mapping, allowed_fields, field):
+    unknown_fields = sorted(set(mapping).difference(allowed_fields))
+    if unknown_fields:
+        raise RequestError(
+            "{} 包含未知字段: {}".format(
+                field,
+                ", ".join(
+                    "{}.{}".format(field, name) for name in unknown_fields
+                ),
+            )
+        )
+
+
 def require_text(mapping, field):
     value = mapping.get(field)
     if not isinstance(value, str) or not value.strip():
@@ -953,6 +967,11 @@ def validate_structural_nodes(raw_nodes):
     for index, raw_node in enumerate(raw_nodes):
         field = "material_view.structural_nodes[{}]".format(index)
         node = require_mapping(raw_node, field)
+        reject_unknown_fields(
+            node,
+            {"node_id", "node_type", "label", "locator", "parent_id"},
+            field,
+        )
         node_id = require_text(node, "node_id")
         if node_id in node_ids:
             raise RequestError("material_view.structural_nodes.node_id 不得重复")
@@ -994,6 +1013,11 @@ def validate_table_relations(raw_relations):
     for index, raw_relation in enumerate(raw_relations):
         field = "material_view.table_relations[{}]".format(index)
         relation = require_mapping(raw_relation, field)
+        reject_unknown_fields(
+            relation,
+            {"relation_id", "table_id", "relation_type", "from_ref", "to_ref"},
+            field,
+        )
         relation_id = require_text(relation, "relation_id")
         if relation_id in relation_ids:
             raise RequestError("material_view.table_relations.relation_id 不得重复")
@@ -1021,6 +1045,9 @@ def validate_citation_locations(raw_citations):
     for index, raw_citation in enumerate(raw_citations):
         field = "material_view.citation_locations[{}]".format(index)
         citation = require_mapping(raw_citation, field)
+        reject_unknown_fields(
+            citation, {"citation_id", "source_ref", "locator"}, field
+        )
         citation_id = require_text(citation, "citation_id")
         if citation_id in citation_ids:
             raise RequestError(
@@ -1050,6 +1077,17 @@ def validate_extraction_gaps(raw_gaps):
     for index, raw_gap in enumerate(raw_gaps):
         field = "material_view.extraction_gaps[{}]".format(index)
         gap = require_mapping(raw_gap, field)
+        reject_unknown_fields(
+            gap,
+            {
+                "gap_id",
+                "gap_type",
+                "description",
+                "locator",
+                "affected_claim_ids",
+            },
+            field,
+        )
         gap_id = require_text(gap, "gap_id")
         if gap_id in gap_ids:
             raise RequestError("material_view.extraction_gaps.gap_id 不得重复")
@@ -1079,6 +1117,24 @@ def validate_extraction_gaps(raw_gaps):
 
 def validate_material_view(raw_view):
     view = require_mapping(raw_view, "material_view")
+    reject_unknown_fields(
+        view,
+        {
+            "schema_version",
+            "view_type",
+            "is_formal_material",
+            "source_id",
+            "source_filename",
+            "material_status",
+            "title",
+            "segments",
+            "structural_nodes",
+            "table_relations",
+            "citation_locations",
+            "extraction_gaps",
+        },
+        "material_view",
+    )
     if view.get("schema_version") != SCHEMA_VERSION:
         raise RequestError("material_view.schema_version 必须为 {}".format(SCHEMA_VERSION))
     if view.get("view_type") != "material_normalized_view":
@@ -1108,9 +1164,9 @@ def validate_material_view(raw_view):
     texts = []
     locator = None
     for index, segment in enumerate(segments):
-        segment = require_mapping(
-            segment, "material_view.segments[{}]".format(index)
-        )
+        field = "material_view.segments[{}]".format(index)
+        segment = require_mapping(segment, field)
+        reject_unknown_fields(segment, {"text", "locator"}, field)
         text = segment.get("text")
         if isinstance(text, str):
             texts.append(text)
@@ -1144,11 +1200,14 @@ def validate_material_view(raw_view):
 
 def validate_task(raw_task):
     task = require_mapping(raw_task, "task")
+    reject_unknown_fields(task, {"instruction", "mode", "scope"}, "task")
     instruction = require_text(task, "instruction")
     mode = require_text(task, "mode")
     if mode not in {"create", "continue", "rewrite", "review", "annotation"}:
         raise RequestError("task.mode 不是受支持的任务模式")
     scope = require_text(task, "scope")
+    if scope not in TASK_SCOPES:
+        raise RequestError("task.scope 不是受支持的任务范围")
     return {"instruction": instruction, "mode": mode, "scope": scope}
 
 
@@ -1161,30 +1220,107 @@ def validate_text_list(mapping, field):
     return [item.strip() for item in value]
 
 
+def validate_semantic_responsibility_mappings(raw_mappings, template_targets):
+    if raw_mappings is None:
+        return []
+    if not isinstance(raw_mappings, list):
+        raise RequestError(
+            "formal_template.semantic_responsibility_mappings 必须是数组"
+        )
+
+    mappings = []
+    responsibilities = set()
+    for index, raw_mapping in enumerate(raw_mappings):
+        field = "formal_template.semantic_responsibility_mappings[{}]".format(
+            index
+        )
+        mapping = require_mapping(raw_mapping, field)
+        reject_unknown_fields(
+            mapping,
+            {"responsibility", "template_targets", "basis"},
+            field,
+        )
+        responsibility = require_text(mapping, "responsibility")
+        if responsibility in responsibilities:
+            raise RequestError(
+                "formal_template.semantic_responsibility_mappings.responsibility 不得重复"
+            )
+        responsibilities.add(responsibility)
+        targets = validate_text_list(mapping, "template_targets")
+        if not targets:
+            raise RequestError("{}.template_targets 不得为空".format(field))
+        unknown_targets = [
+            target for target in targets if target not in template_targets
+        ]
+        if unknown_targets:
+            raise RequestError(
+                "{}.template_targets 必须引用正式模板已声明的控制项".format(
+                    field
+                )
+            )
+        mappings.append(
+            {
+                "responsibility": responsibility,
+                "template_targets": targets,
+                "basis": require_text(mapping, "basis"),
+            }
+        )
+    return mappings
+
+
 def validate_formal_template(raw_template):
     if raw_template is None:
         return None
     template = require_mapping(raw_template, "formal_template")
+    reject_unknown_fields(
+        template,
+        {
+            "template_id",
+            "template_name",
+            "source_ref",
+            "controls",
+            "semantic_responsibility_mappings",
+        },
+        "formal_template",
+    )
     controls = require_mapping(
         template.get("controls"), "formal_template.controls"
+    )
+    reject_unknown_fields(
+        controls,
+        {"chapters", "numbering", "tables", "required_items"},
+        "formal_template.controls",
+    )
+    normalized_controls = {
+        "chapters": validate_text_list(controls, "chapters"),
+        "numbering": require_text(controls, "numbering"),
+        "tables": validate_text_list(controls, "tables"),
+        "required_items": validate_text_list(
+            controls, "required_items"
+        ),
+    }
+    template_targets = set(
+        normalized_controls["chapters"]
+        + normalized_controls["tables"]
+        + normalized_controls["required_items"]
     )
     return {
         "template_id": require_text(template, "template_id"),
         "template_name": require_text(template, "template_name"),
         "source_ref": require_text(template, "source_ref"),
-        "controls": {
-            "chapters": validate_text_list(controls, "chapters"),
-            "numbering": require_text(controls, "numbering"),
-            "tables": validate_text_list(controls, "tables"),
-            "required_items": validate_text_list(
-                controls, "required_items"
-            ),
-        },
+        "controls": normalized_controls,
+        "semantic_responsibility_mappings": (
+            validate_semantic_responsibility_mappings(
+                template.get("semantic_responsibility_mappings"),
+                template_targets,
+            )
+        ),
     }
 
 
 def build_structure_adaptation(formal_template, decision):
     if formal_template is not None:
+        mappings = formal_template["semantic_responsibility_mappings"]
         return {
             "mode": "formal_template",
             "structure_authority": "formal_template",
@@ -1197,6 +1333,23 @@ def build_structure_adaptation(formal_template, decision):
             ],
             "material_contract_role": "content_responsibility_check_only",
             "material_contract_may_override_structure": False,
+            "semantic_responsibility_mapping": {
+                "status": (
+                    "provided_unverified"
+                    if mappings
+                    else "needs_confirmation"
+                ),
+                "basis_contracts": [
+                    contract
+                    for contract in decision["load_contracts"]
+                    if contract.startswith("scene.")
+                ],
+                "mappings": mappings,
+                "contract_responsibility_set": "unavailable",
+                "completeness_claim": "not_made",
+                "title_match_required": False,
+                "unmapped_means_missing_content": False,
+            },
         }
 
     scene = decision["document_scene"]["value"]
@@ -1239,6 +1392,21 @@ def validate_claims(raw_claims):
     for index, raw_claim in enumerate(raw_claims):
         field = "claims[{}]".format(index)
         claim = require_mapping(raw_claim, field)
+        reject_unknown_fields(
+            claim,
+            {
+                "claim_id",
+                "text",
+                "evidence_status",
+                "statement_force",
+                "requested_statement_force",
+                "source_ref",
+                "risk",
+                "owner",
+                "conflict_ref",
+            },
+            field,
+        )
         claim_id = require_text(claim, "claim_id")
         if claim_id in seen_claim_ids:
             raise RequestError("claims.claim_id 不得重复: {}".format(claim_id))
@@ -1309,6 +1477,17 @@ def validate_material_set(raw_material_set):
     if raw_material_set is None:
         return None
     material_set = require_mapping(raw_material_set, "material_set")
+    reject_unknown_fields(
+        material_set,
+        {
+            "set_id",
+            "upstream_materials_complete",
+            "materials",
+            "relations",
+            "conflicts",
+        },
+        "material_set",
+    )
     set_id = require_text(material_set, "set_id")
     upstream_materials_complete = material_set.get(
         "upstream_materials_complete"
@@ -1327,6 +1506,19 @@ def validate_material_set(raw_material_set):
     for index, raw_material in enumerate(raw_materials):
         field = "material_set.materials[{}]".format(index)
         material = require_mapping(raw_material, field)
+        reject_unknown_fields(
+            material,
+            {
+                "material_id",
+                "title",
+                "version",
+                "material_subtype",
+                "status",
+                "date",
+                "user_designated_control",
+            },
+            field,
+        )
         material_id = require_text(material, "material_id")
         if material_id in material_ids:
             raise RequestError(
@@ -1374,6 +1566,17 @@ def validate_material_set(raw_material_set):
     for index, raw_relation in enumerate(raw_relations):
         field = "material_set.relations[{}]".format(index)
         relation = require_mapping(raw_relation, field)
+        reject_unknown_fields(
+            relation,
+            {
+                "relation_id",
+                "from_material_id",
+                "to_material_id",
+                "relation_type",
+                "basis",
+            },
+            field,
+        )
         relation_id = require_text(relation, "relation_id")
         if relation_id in relation_ids:
             raise RequestError(
@@ -1410,6 +1613,20 @@ def validate_material_set(raw_material_set):
     for index, raw_conflict in enumerate(raw_conflicts):
         field = "material_set.conflicts[{}]".format(index)
         conflict = require_mapping(raw_conflict, field)
+        reject_unknown_fields(
+            conflict,
+            {
+                "conflict_id",
+                "left_material_id",
+                "right_material_id",
+                "dimension",
+                "difference",
+                "impact",
+                "pending_confirmation",
+                "relation_id",
+            },
+            field,
+        )
         conflict_id = require_text(conflict, "conflict_id")
         if conflict_id in conflict_ids:
             raise RequestError(
@@ -1988,7 +2205,15 @@ def build_writing_preparation_sheet(decision, view, claims):
         "schema_version": SCHEMA_VERSION,
         "current_stage": "preparation",
         "confirmation_required": True,
-        "next_stage": "draft_after_user_confirmation",
+        "next_stage": (
+            "resolve_blockers_before_draft"
+            if (
+                decision["extraction_gap_review"]["status"] == "blocked"
+                or decision["material_set_review"]["review_status"]
+                == "blocked"
+            )
+            else "draft_after_user_confirmation"
+        ),
         "material_inventory": material_inventory,
         "material_relationships": material_review["relationships"],
         "perception_dimensions": {
@@ -2737,6 +2962,11 @@ def build_unclear_decision(task, text):
 def build_perception_decision(request):
     """Return the observable decision for one task and normalized view."""
     request = require_mapping(request, "request")
+    reject_unknown_fields(
+        request,
+        {"task", "material_view", "formal_template", "claims", "material_set"},
+        "request",
+    )
     task = validate_task(request.get("task"))
     view = validate_material_view(request.get("material_view"))
     formal_template = validate_formal_template(request.get("formal_template"))
@@ -2822,10 +3052,9 @@ def build_perception_decision(request):
     extraction_gap_blocked = (
         decision["extraction_gap_review"]["status"] == "blocked"
     )
-    if (
-        complete_plan_creation or material_set is not None
-    ) and not extraction_gap_blocked:
-        decision["processing_mode"] = "two_stage"
+    if complete_plan_creation or material_set is not None:
+        if not extraction_gap_blocked:
+            decision["processing_mode"] = "two_stage"
         decision["load_contracts"].append(
             "common.writing_preparation"
         )
@@ -2855,6 +3084,10 @@ def build_perception_decision(request):
 
     return {
         "schema_version": SCHEMA_VERSION,
+        "unknown_field_policy": {
+            "schema_objects": "reject_unknown_fields",
+            "locator_objects": "allow_extension_fields",
+        },
         "material_view": material_view_result,
         "decision": decision,
     }

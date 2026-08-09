@@ -21,6 +21,8 @@
 
 材料合同只检查内容责任是否落实，不得以通用提纲替换正式模板，不得因标题不同直接认定内容缺失，也不得擅自新增、删除或重排正式章节。模板存在内容责任缺口时，先定位并报告，由用户确认处理方式。
 
+正式模板可通过 `semantic_responsibility_mappings` 提供语义责任映射。每项映射把用户或正式来源明确给出的内容责任关联到模板已声明的章节、表格或必填项，并记录映射依据；映射不要求责任名称与模板标题相同。当前基础层没有经案例验证的专用材料合同责任集，因此输出只能标记为 `provided_unverified` 或 `needs_confirmation`，`contract_responsibility_set` 保持 `unavailable`，`completeness_claim` 保持 `not_made`。不得把推荐提纲当作材料合同责任，也不得仅因没有映射或标题不同就判定内容缺失，`unmapped_means_missing_content` 固定为 `false`。
+
 请求未提供 `formal_template` 时，才允许输出 `recommended_outline`。该对象必须同时标记 `label: 建议提纲`、`status: suggested`、`is_formal_template: false` 和 `adjustable: true`，说明其来源是已解析的材料或场景合同，不得包装为主管要求、组织标准或正式格式。
 
 ## 提取缺口阻断

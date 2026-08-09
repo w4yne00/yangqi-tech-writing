@@ -47,6 +47,12 @@ Issue #13 adds one maintainer-facing deterministic synthetic benchmark over the 
 
 Foundation 12 verification on 2026-08-09 passed 202 root unit tests, including seven unified benchmark integration tests and one reference-contract test. The benchmark directly reruns the existing eval immutability, trigger accuracy, audit behavior and stable contract test modules, in addition to checking the 43 behavior evals, 20 trigger boundaries, three audit-script exit contracts and stable `1.1.0` metadata. The preserved rc.3 outputs copy independently passed 66 tests, Skill validation and four product JSON parsers. Every benchmark case is deterministic synthetic input with `model_execution: false` and is non-real engineering evidence. It supports only recognition coverage and basic support claims; it does not establish deep support, joint-review support, forward validation or statistical stability. No stable release was published, the installed Skill was not replaced, and no GitHub Release was created.
 
+## Issue #1 closure scope
+
+The umbrella specification was reviewed against the cumulative Foundation 01–12 implementation using `v1.1.0` as the fixed point. Three remaining public-contract gaps were closed: formal templates can carry explicit semantic responsibility mappings without requiring title equality or inferring completeness from a recommended outline; recognized complete-create and material-set tasks retain a writing preparation sheet when extraction gaps force `conservative_audit`; and the perception request now exposes and enforces an unknown-field policy, with schema objects rejecting unknown fields, locator objects remaining extensible, and task scope limited to `document` or `local`.
+
+Issue #1 closure verification on 2026-08-09 passed 205 root unit tests, Python bytecode compilation, the three CLI smoke contracts with expected exits `2/2/0`, five product JSON parsers, the material-contract template validator and root Skill validation. The preserved rc.3 outputs copy remained read-only and independently passed its 66 tests, Skill validation and four product JSON parsers. No deep support, joint-review support, forward-validation or statistical-stability claim was added; the stable version, installed Skill and preserved outputs candidates were not replaced.
+
 ## Release status
 
 The FWD-01, unfinished-without-baseline and explicit-overdue forward cases passed, and the clean outputs copy passed independent verification. The candidate was released as stable v1.1.0 after 66 local tests passed.

@@ -49,6 +49,8 @@ class ReferenceContractTests(unittest.TestCase):
             "不是新的正式材料",
             "正式模板控制章节、编号、表格和必填项",
             "内容责任",
+            "语义责任映射",
+            "标题相同",
             "建议提纲",
             "OCR 不确定",
             "表格关系丢失",
@@ -125,6 +127,8 @@ class ReferenceContractTests(unittest.TestCase):
             "待确认项",
             "追溯摘要",
             "拟加载合同",
+            "阻断任务仍保留写作准备单",
+            "resolve_blockers_before_draft",
             "已确认",
             "需要用户确认",
             "不输出隐藏推理",
@@ -132,6 +136,18 @@ class ReferenceContractTests(unittest.TestCase):
             "证据状态",
             "陈述效力",
             "H1—H6",
+        ]:
+            self.assertIn(phrase, text)
+
+    def test_perception_contract_defines_unknown_field_policy(self):
+        text = (ROOT / "references/perception-decision.md").read_text(
+            encoding="utf-8"
+        )
+        for phrase in [
+            "未知字段",
+            "reject_unknown_fields",
+            "allow_extension_fields",
+            "`document` 或 `local`",
         ]:
             self.assertIn(phrase, text)
 

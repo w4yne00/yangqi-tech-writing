@@ -6,7 +6,7 @@
 
 请求包含 `task`、`material_view`、可选的 `formal_template`、可选的 `claims` 和可选的 `material_set`：
 
-- `task`：包含用户指令、任务模式和处理范围；任务模式使用 `create`、`continue`、`rewrite`、`review` 或 `annotation`。
+- `task`：包含用户指令、任务模式和处理范围；任务模式使用 `create`、`continue`、`rewrite`、`review` 或 `annotation`，处理范围只能使用 `document` 或 `local`。
 - `material_view`：`schema_version` 为 `1.0`，`view_type` 为 `material_normalized_view`，并保留 `source_id`、`material_status`、标题及至少一个带 `locator` 的内容片段；需要时通过 `source_filename`、`structural_nodes`、`table_relations`、`citation_locations` 和 `extraction_gaps` 保留文件名、标题条款层级、页表图定位、表格关系、引用位置和提取缺口。
 - `formal_template`：记录模板标识、名称、来源，以及模板控制的章节、编号、表格和必填项；省略时表示当前请求没有提供正式模板。
 - `claims`：每项至少包含 `claim_id`、`text`、`evidence_status` 和 `statement_force`；文种转换请求改变表达身份时另给 `requested_statement_force`，提取缺口阻断使用 `risk` 的 `low`、`medium` 或 `high`，省略时按 `medium` 处理。
@@ -16,6 +16,8 @@
 当前最小定位可以是章节和页码，也可以是其他能够回到来源材料复核的非空定位对象。标题、条款、表格和图示使用 `structural_nodes` 保留父子层级；表格语义关系和引用位置分别使用 `table_relations` 和 `citation_locations`。完整字段和边界见[正式模板适配与提取缺口阻断](formal-template-adaptation.md)。核心不解析 DOCX、PDF、表格、图片或 OCR。
 
 `evidence_status` 使用 `SUPPORTED`、`OPINION`、`UNSUPPORTED`、`CONTRADICTED` 或 `NEEDS_USER_CONFIRMATION`；`SUPPORTED` 必须提供 `source_ref`。`statement_force` 使用 `assumption`、`professional_judgment`、`recommended_solution`、`approved_boundary`、`contractual_commitment`、`implementation_fact`、`acceptance_conclusion` 或 `unknown`。
+
+未知字段策略如下：请求、任务、材料标准化视图、Claim、正式模板及材料集等 schema 对象采用 `reject_unknown_fields`，出现未声明字段时返回 `invalid_request`，避免拼写错误或未来字段被静默丢弃。`locator` 是专业提取工具的扩展边界，采用 `allow_extension_fields`，但仍必须至少包含一个可用定位值。输出通过顶层 `unknown_field_policy` 公开这两项策略。
 
 ## 输出合同
 
@@ -35,10 +37,10 @@
 - 任务模式保持用户授权，不因材料分类改变。
 - 支持级别只声明 `recognition_coverage` 或 `basic_support`。最小切片不声明深度支持、联审支持或前向验证。
 - 处理模式可以是 `quick_path`、`two_stage` 或 `conservative_audit`。已识别的完整方案新建和多材料整合使用 `two_stage`；材料身份明确、范围为 `local` 且没有待确认项或阻断项的局部改写、审阅和只标问题任务可以使用 `quick_path`。
-- `two_stage` 输出 `writing_preparation_sheet`，包含材料清单与关系、感知维度、控制性材料、事实与判断、假设、冲突、待确认项、确认边界、追溯摘要和拟加载合同。完整字段和阶段边界见[写作准备单与快速通道](writing-preparation.md)。
+- `two_stage` 输出 `writing_preparation_sheet`，包含材料清单与关系、感知维度、控制性材料、事实与判断、假设、冲突、待确认项、确认边界、追溯摘要和拟加载合同。完整新建或多材料整合因高风险提取缺口降级为 `conservative_audit` 时仍保留准备单，但下一阶段固定为先消解阻断。完整字段和阶段边界见[写作准备单与快速通道](writing-preparation.md)。
 - 快速通道仍执行保护项、证据、陈述效力和 H1—H6；局部任务一旦存在无来源高效力陈述、证据冲突、效力不明或其他待确认/阻断项，就降级为 `conservative_audit`。
 - `claim_decisions` 逐项输出证据状态、来源效力、请求效力、允许效力和处理动作，保持证据状态与陈述效力正交。
-- `structure_adaptation` 明确结构控制权。提供正式模板时使用 `formal_template` 模式，模板控制章节、编号、表格和必填项，材料合同只检查内容责任，且不得输出推荐提纲；未提供正式模板时使用 `recommended_outline` 模式，提纲必须标记为 `suggested`、可调整且不是正式模板。
+- `structure_adaptation` 明确结构控制权。提供正式模板时使用 `formal_template` 模式，模板控制章节、编号、表格和必填项，`semantic_responsibility_mapping` 只记录用户或正式来源显式提供的责任到模板控制项映射，且不得输出推荐提纲；映射不要求标题相同。没有经验证的专用材料合同责任集时只标记 `provided_unverified` 或 `needs_confirmation`，不声称映射完整，也不把推荐提纲当作材料合同责任。未提供正式模板时使用 `recommended_outline` 模式，提纲必须标记为 `suggested`、可调整且不是正式模板。
 - `extraction_gap_review` 逐项记录 OCR 不确定、表格关系丢失或图示无法恢复的影响范围。缺口显式关联到 `risk: high` 的 Claim 时，Claim 在独立的 `extraction_gap_action` 中使用 `block_extraction_gap`，保留原有证据处理动作，不产生允许陈述效力并进入阻断项；低风险或未声明依赖关系时只记录缺口。
 - `material_set_review` 输出单材料或材料集模式、材料元数据、七类显式关系、控制依据、冲突、跨阶段可核验状态和完成声明。
 - 材料集只按明确关系确定控制与替代线索，不按日期自动形成 `supersedes`；批准、签署、用户指定和 `governs` 可以作为可审查的控制依据。

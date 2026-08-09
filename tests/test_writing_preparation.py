@@ -187,6 +187,9 @@ class WritingPreparationTests(unittest.TestCase):
             "common.material_set_review",
             sheet["proposed_contracts"],
         )
+        self.assertEqual(
+            "resolve_blockers_before_draft", sheet["next_stage"]
+        )
 
     def test_bounded_local_tasks_use_quick_path_without_skipping_hard_gates(self):
         for mode in ("rewrite", "review", "annotation"):

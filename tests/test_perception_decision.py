@@ -1703,6 +1703,33 @@ class PerceptionDecisionTests(unittest.TestCase):
             "template_id": "TPL-001",
             "template_name": "初步设计报告正式模板",
             "source_ref": "用户提供的正式模板文件",
+            "semantic_responsibility_mappings": [
+                {
+                    "responsibility": "设计依据与边界",
+                    "template_targets": ["1 编制依据"],
+                    "basis": "用户确认的语义对应关系",
+                },
+                {
+                    "responsibility": "现状与约束",
+                    "template_targets": ["2 总体设计"],
+                    "basis": "用户确认的语义对应关系",
+                },
+                {
+                    "responsibility": "总体设计",
+                    "template_targets": ["2 总体设计"],
+                    "basis": "用户确认的语义对应关系",
+                },
+                {
+                    "responsibility": "分项设计",
+                    "template_targets": ["3 分项设计"],
+                    "basis": "用户确认的语义对应关系",
+                },
+                {
+                    "responsibility": "实施与验证",
+                    "template_targets": ["3 分项设计"],
+                    "basis": "用户确认的语义对应关系",
+                },
+            ],
             "controls": {
                 "chapters": ["1 编制依据", "2 总体设计", "3 分项设计"],
                 "numbering": "preserve",
@@ -1728,6 +1755,101 @@ class PerceptionDecisionTests(unittest.TestCase):
         )
         self.assertFalse(adaptation["material_contract_may_override_structure"])
         self.assertNotIn("recommended_outline", adaptation)
+        mapping = adaptation["semantic_responsibility_mapping"]
+        self.assertEqual("provided_unverified", mapping["status"])
+        self.assertEqual(
+            "unavailable", mapping["contract_responsibility_set"]
+        )
+        self.assertEqual("not_made", mapping["completeness_claim"])
+        self.assertFalse(mapping["title_match_required"])
+        self.assertNotIn("unmapped_responsibilities", mapping)
+        self.assertNotIn("responsibilities", mapping)
+        self.assertEqual(
+            ["2 总体设计"],
+            next(
+                item
+                for item in mapping["mappings"]
+                if item["responsibility"] == "现状与约束"
+            )["template_targets"],
+        )
+
+    def test_formal_template_without_semantic_mapping_does_not_claim_missing_content(self):
+        request = deepcopy(self.fixture["cases"][0]["request"])
+        request["formal_template"] = {
+            "template_id": "TPL-002",
+            "template_name": "初步设计报告正式模板",
+            "source_ref": "用户提供的正式模板文件",
+            "controls": {
+                "chapters": ["第一部分", "第二部分"],
+                "numbering": "preserve",
+                "tables": [],
+                "required_items": [],
+            },
+        }
+
+        mapping = self.run_decision(request)["decision"][
+            "structure_adaptation"
+        ]["semantic_responsibility_mapping"]
+
+        self.assertEqual("needs_confirmation", mapping["status"])
+        self.assertFalse(mapping["title_match_required"])
+        self.assertFalse(mapping["unmapped_means_missing_content"])
+        self.assertEqual([], mapping["mappings"])
+
+    def test_public_contract_rejects_unknown_fields_and_unknown_task_scope(self):
+        base = deepcopy(self.fixture["cases"][0]["request"])
+        formal_template = {
+            "template_id": "TPL-STRICT",
+            "template_name": "正式模板",
+            "source_ref": "用户输入",
+            "controls": {
+                "chapters": ["第一章"],
+                "numbering": "preserve",
+                "tables": [],
+                "required_items": [],
+            },
+        }
+        invalid_requests = []
+
+        unknown_request_field = deepcopy(base)
+        unknown_request_field["unexpected"] = True
+        invalid_requests.append((unknown_request_field, "request.unexpected"))
+
+        unknown_task_field = deepcopy(base)
+        unknown_task_field["task"]["audience"] = "评审人"
+        invalid_requests.append((unknown_task_field, "task.audience"))
+
+        unknown_view_field = deepcopy(base)
+        unknown_view_field["material_view"]["raw_html"] = "<p>派生内容</p>"
+        invalid_requests.append((unknown_view_field, "material_view.raw_html"))
+
+        unknown_template_field = deepcopy(base)
+        unknown_template_field["formal_template"] = deepcopy(formal_template)
+        unknown_template_field["formal_template"]["layout"] = "A4"
+        invalid_requests.append(
+            (unknown_template_field, "formal_template.layout")
+        )
+
+        unknown_scope = deepcopy(base)
+        unknown_scope["task"]["scope"] = "chapter"
+        invalid_requests.append((unknown_scope, "task.scope"))
+
+        for request, expected_field in invalid_requests:
+            with self.subTest(expected_field=expected_field):
+                completed = self.run_raw(request)
+                self.assertEqual(1, completed.returncode)
+                error = json.loads(completed.stderr)
+                self.assertEqual("invalid_request", error["error"])
+                self.assertIn(expected_field, error["message"])
+
+        valid = self.run_decision(base)
+        self.assertEqual(
+            {
+                "schema_objects": "reject_unknown_fields",
+                "locator_objects": "allow_extension_fields",
+            },
+            valid["unknown_field_policy"],
+        )
 
     def test_missing_formal_template_returns_only_a_labeled_recommended_outline(self):
         request = deepcopy(self.fixture["cases"][0]["request"])
@@ -1943,7 +2065,16 @@ class PerceptionDecisionTests(unittest.TestCase):
 
                 self.assertEqual("blocked", decision["extraction_gap_review"]["status"])
                 self.assertEqual("conservative_audit", decision["processing_mode"])
-                self.assertNotIn("writing_preparation_sheet", decision)
+                self.assertIn("common.writing_preparation", decision["load_contracts"])
+                sheet = decision["writing_preparation_sheet"]
+                self.assertEqual("preparation", sheet["current_stage"])
+                self.assertEqual(
+                    "resolve_blockers_before_draft", sheet["next_stage"]
+                )
+                self.assertIn(
+                    "extraction_gap:F10-GAP-TWO-STAGE:claim:F10-HIGH-TWO-STAGE",
+                    sheet["blockers"],
+                )
 
     def test_non_review_task_does_not_claim_basic_support(self):
         request = deepcopy(self.fixture["cases"][0]["request"])

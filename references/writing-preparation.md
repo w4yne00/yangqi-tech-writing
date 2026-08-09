@@ -18,7 +18,9 @@
 8. 能回到来源材料、Claim 和显式关系的追溯摘要；
 9. 第二阶段拟加载合同。
 
-准备单使用 `current_stage: preparation`、`confirmation_required: true` 和 `next_stage: draft_after_user_confirmation` 表示阶段边界。`confirmation_boundary.confirmed` 以 `category`、`item_id`、`value` 和 `basis` 记录用户输入、有明确来源支持的信息及其可复核派生项，覆盖任务、材料、感知维度、Claim、明确材料关系和控制依据。`requires_user_confirmation` 以 `category`、`item_id` 和 `basis` 逐项记录感知缺口、Claim 缺口、关系、冲突或材料集问题；任何进入“需要用户确认”桶的 Claim 必须同步进入该清单。分类依据、来源定位、证据状态和陈述效力可以公开，内部分析过程不进入准备单。
+准备单使用 `current_stage: preparation` 和 `confirmation_required: true` 表示阶段边界。没有结构化硬阻断时，`next_stage` 为 `draft_after_user_confirmation`；存在高风险提取缺口、材料关系不明或材料冲突时，`next_stage` 为 `resolve_blockers_before_draft`。`confirmation_boundary.confirmed` 以 `category`、`item_id`、`value` 和 `basis` 记录用户输入、有明确来源支持的信息及其可复核派生项，覆盖任务、材料、感知维度、Claim、明确材料关系和控制依据。`requires_user_confirmation` 以 `category`、`item_id` 和 `basis` 逐项记录感知缺口、Claim 缺口、关系、冲突或材料集问题；任何进入“需要用户确认”桶的 Claim 必须同步进入该清单。分类依据、来源定位、证据状态和陈述效力可以公开，内部分析过程不进入准备单。
+
+已识别的完整方案新建或多材料整合即使因高风险提取缺口降级为 `conservative_audit`，阻断任务仍保留写作准备单，确保缺口、Claim 和阻断项有统一确认载体。该准备单不恢复自动定稿权限；只有阻断消解后才能进入起草。
 
 材料标准化视图继续标记为 `is_formal_material: false`。它可以进入材料清单和追溯摘要，但不因进入准备单而获得批准、签署、合同或验收效力。
 
@@ -37,4 +39,4 @@
 
 ## 输出边界
 
-`two_stage` 必须包含 `writing_preparation_sheet`；`quick_path` 不包含该字段。信息不足但尚不属于完整方案或多材料整合时使用 `conservative_audit`。三种模式都沿用同一感知决策入口和稳定语义合同，不新增平行运行入口。
+`two_stage` 必须包含 `writing_preparation_sheet`；因高风险提取缺口降级的完整新建或多材料整合任务也保留该字段；`quick_path` 不包含该字段。信息不足但尚不属于完整方案或多材料整合时使用 `conservative_audit`。三种模式都沿用同一感知决策入口和稳定语义合同，不新增平行运行入口。
