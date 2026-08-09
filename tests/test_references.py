@@ -6,6 +6,34 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class ReferenceContractTests(unittest.TestCase):
+    def test_foundation_benchmark_defines_coverage_and_evidence_boundaries(self):
+        text = (
+            ROOT / "references/foundation-synthetic-benchmark.md"
+        ).read_text(encoding="utf-8")
+        for phrase in [
+            "三个业务域",
+            "七类文种场景",
+            "生命周期近失配",
+            "复合材料",
+            "陈述效力",
+            "`quick_path`",
+            "`two_stage`",
+            "七类材料关系",
+            "七类冲突阻断",
+            "项目隔离",
+            "正式模板适配",
+            "提取缺口阻断",
+            "禁止持久化",
+            "43 项行为评测",
+            "20 项触发边界",
+            "非真实工程证据",
+            "不构成深度支持",
+            "不构成联审支持",
+            "不构成前向验证",
+            "不证明统计稳定性",
+        ]:
+            self.assertIn(phrase, text)
+
     def test_formal_template_adaptation_preserves_structure_and_blocks_gaps(self):
         text = (ROOT / "references/formal-template-adaptation.md").read_text(
             encoding="utf-8"

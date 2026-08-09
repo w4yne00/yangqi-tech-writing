@@ -23,6 +23,7 @@ REQUIRED_FILES = [
     "references/writing-preparation.md",
     "references/project-context.md",
     "references/material-contract-evidence.md",
+    "references/foundation-synthetic-benchmark.md",
     "references/governance-operation.md",
     "references/research-project.md",
     "references/ai-trace-patterns.md",
@@ -42,6 +43,7 @@ REQUIRED_FILES = [
     "scripts/material_contract_registry.py",
     "templates/material-contract-evidence-bundle.json",
     "evals/evals.json",
+    "evals/foundation-synthetic-benchmark.json",
 ]
 
 

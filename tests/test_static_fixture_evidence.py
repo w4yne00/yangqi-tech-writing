@@ -12,6 +12,7 @@ class StaticFixtureEvidenceTests(unittest.TestCase):
         self.assertEqual("v1.1.0", data["version"])
         self.assertEqual("deterministic-static-fixture", data["evidence_type"])
         self.assertFalse(data["model_execution"])
+        self.assertFalse(data["real_engineering_evidence"])
         self.assertEqual(8, data["case_count"])
         self.assertEqual(16, data["assertions"]["total"])
         self.assertEqual(16, data["assertions"]["passed"])

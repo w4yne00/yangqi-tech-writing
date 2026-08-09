@@ -2,6 +2,7 @@
   "schema_version": "1.0",
   "evidence_type": "deterministic-synthetic-fixture",
   "model_execution": false,
+  "real_engineering_evidence": false,
   "statement": "仅验证材料合同和样本登记的数据合同，不模拟正式要求或真实材料证据，不代表深度支持、联审支持或模型运行表现。",
   "simulated_basic_support_input": {
     "schema_version": "1.0",

@@ -41,6 +41,12 @@ Formal templates control chapters, numbering, tables and required items; materia
 
 Foundation 10 verification on 2026-08-09 passed 194 root unit tests, including seven new highest-level behavior tests and one reference-contract test. Post-review regressions preserve an existing evidence-conflict action alongside the independent extraction-gap action and prevent complete-create or material-set routing from overriding an extraction-gap blocker with `two_stage`. The three CLI smoke tests returned 2/2/0, four product and two existing forward JSON files parsed, root quick validation passed, and the preserved rc.3 outputs copy independently passed its 66 tests, quick validation and four product JSON parsers. The core still uses only the Python standard library and does not implement DOCX, PDF, Excel, OCR or image parsers. The old outputs candidate was verified read-only and was not replaced.
 
+## Foundation 12 scope
+
+Issue #13 adds one maintainer-facing deterministic synthetic benchmark over the existing public perception and project-context seams. Its 26 cases cover the three business domains, seven document scenes, lifecycle near misses, composite materials, statement-force preservation, quick/two-stage processing, material relations, conflict blocking, confirmed context updates, project isolation, formal-template adaptation, extraction-gap blocking and prohibited-persistence boundaries.
+
+Foundation 12 verification on 2026-08-09 passed 202 root unit tests, including seven unified benchmark integration tests and one reference-contract test. The benchmark also rechecks the 43 behavior evals, 20 trigger boundaries, three audit-script exit contracts and stable `1.1.0` metadata. Every benchmark case is deterministic synthetic input with `model_execution: false` and is non-real engineering evidence. It supports only recognition coverage and basic support claims; it does not establish deep support, joint-review support, forward validation or statistical stability. No stable release was published, the installed Skill was not replaced, and no GitHub Release was created.
+
 ## Release status
 
 The FWD-01, unfinished-without-baseline and explicit-overdue forward cases passed, and the clean outputs copy passed independent verification. The candidate was released as stable v1.1.0 after 66 local tests passed.
@@ -58,4 +64,5 @@ The user authorized stable integration, local Skill replacement, commit and GitH
 - 前向案例每项只运行 1 次，不得包装为统计稳定性证明。
 - Foundation 11 已建立材料合同与脱敏样本登记入口；合成夹具保持 `basic_support`，不作为深度或联审能力证据，根目录回归为 134 项。
 - Foundation 10 已扩展材料标准化视图并增加正式模板适配与提取缺口阻断；正式模板控制结构，无模板时只给建议提纲，三类提取缺口仅阻断显式依赖的高风险结论，根目录回归为 194 项。
+- Foundation 12 已建立 26 案例统一确定性合成证据基准，根目录回归为 202 项；全部案例属于非真实工程证据，只支持识别覆盖和基础支持声明，不构成深度支持、联审支持、前向验证或统计稳定性证明。
 - 本次已授权提交、推送和覆盖安装；GitHub Release 仍需单独授权。

@@ -2,6 +2,7 @@
   "schema_version": "1.0",
   "evidence_type": "deterministic-synthetic-fixture",
   "model_execution": false,
+  "real_engineering_evidence": false,
   "statement": "仅验证本地项目上下文包的数据合同和外部行为，不代表真实项目材料或模型运行通过率。",
   "confirmed_update": {
     "schema_version": "1.0",

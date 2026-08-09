@@ -1568,6 +1568,7 @@ class PerceptionDecisionTests(unittest.TestCase):
             "deterministic-synthetic-fixture", self.fixture["evidence_type"]
         )
         self.assertFalse(self.fixture["model_execution"])
+        self.assertFalse(self.fixture["real_engineering_evidence"])
         self.assertIn("不代表真实模型运行通过率", self.fixture["statement"])
 
     def test_normalized_view_must_explicitly_disclaim_formal_status(self):

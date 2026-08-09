@@ -146,6 +146,16 @@ python3 scripts/material_contract_registry.py material-contract-evidence-bundle.
 
 项目受限样本只能登记为私有审阅，不能进入通用规则、公开评测或能力证据；禁止持久化信息直接阻断。合成案例不会被计为正式要求或真实案例。只有正式要求及所需的脱敏真实正例、失败例、生命周期边界和缺失信息案例全部到位，才能声明 `deep_support`；`joint_review_support` 还需追溯缺失、版本冲突、陈述效力不清和明确替代案例。完整规则见[材料合同与样本证据登记](references/material-contract-evidence.md)。
 
+## Foundation 12 合成证据基准
+
+维护者可通过一个统一基准复核三个业务域、七类场景、生命周期近失配、复合材料、陈述效力、处理模式、材料集、项目上下文、正式模板、提取缺口和数据边界：
+
+```bash
+python3 -m unittest tests.test_foundation_synthetic_benchmark -v
+```
+
+基准清单为 [`evals/foundation-synthetic-benchmark.json`](evals/foundation-synthetic-benchmark.json)。26 个案例全部标记为确定性合成输入、`model_execution: false` 和非真实工程证据；通过结果只支持识别覆盖和基础支持声明，不构成深度支持、联审支持或前向验证，也不证明统计稳定性。完整边界见[基础层确定性合成证据基准](references/foundation-synthetic-benchmark.md)。
+
 ## 目录结构
 
 ```text
@@ -156,6 +166,7 @@ yangqi-tech-writing/
 ├── scripts/                 # 感知决策、上下文、合同登记与审计脚本
 ├── tests/                   # 单元测试与烟测样例
 ├── evals/evals.json         # 43 项行为评测
+├── evals/foundation-synthetic-benchmark.json # Foundation 12 统一合成基准
 ├── TESTING.md               # 验证记录和局限
 ├── CHANGELOG.md             # 版本变更
 ├── ROADMAP.md               # 后续路线

@@ -2,6 +2,7 @@
   "version": "v1.1.0",
   "evidence_type": "deterministic-static-fixture",
   "model_execution": false,
+  "real_engineering_evidence": false,
   "case_ids": [25, 27, 29, 31, 33, 35, 37, 39],
   "case_count": 8,
   "assertions": {

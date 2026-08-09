@@ -21,11 +21,13 @@ python3 scripts/style_audit.py tests/fixtures/sample.md
 python3 -m unittest tests.test_perception_decision -v
 python3 -m unittest tests.test_project_context -v
 python3 -m unittest tests.test_material_contract_registry -v
+python3 -m unittest tests.test_foundation_synthetic_benchmark -v
 python3 scripts/material_contract_registry.py templates/material-contract-evidence-bundle.json
 python3 -m json.tool evals/evals.json
 python3 -m json.tool evals/trigger-evals.json
 python3 -m json.tool evals/trigger-results.json
 python3 -m json.tool evals/static-fixture-results.json
+python3 -m json.tool evals/foundation-synthetic-benchmark.json
 ```
 
 安装了本地 `skill-creator` 时，还可执行：
@@ -35,6 +37,10 @@ python3 "$HOME/.agents/skills/skill-creator/scripts/quick_validate.py" .
 ```
 
 ## Results
+
+- Foundation 12 当前根目录完整单元测试为 202 项通过、0 项失败；统一基准、产品 JSON、Skill 结构、Markdown 链接、版本和隐私检查均通过。
+- Foundation 12 新增 26 个统一基准案例和 7 项集成测试，覆盖三个业务域、七类场景、生命周期近失配、复合材料、陈述效力强化/弱化边界、快速/两阶段模式、七类材料关系、七类冲突阻断、上下文确认更新与项目隔离、正式模板、提取缺口和禁止持久化边界。
+- 统一基准复核既有 43 项行为评测、20 项触发边界、三个审计脚本 `2/2/0` 退出码和稳定版 `1.1.0` 元数据。全部案例均为确定性合成输入，`model_execution: false`，属于非真实工程证据；结果只支持识别覆盖和基础支持，不构成深度支持、联审支持、前向验证或统计稳定性证明。
 
 - Foundation 10 当前根目录完整单元测试为 194 项通过、0 项失败；最高层感知入口、正式模板适配合同、公开链接、版本和隐私检查均通过。
 - Foundation 10 新增 7 项最高层外部行为测试和 1 项参考合同测试：标准化视图保留文件名、标题条款层级、页表图定位、表格关系、引用位置和提取缺口；正式模板存在时控制章节、编号、表格和必填项，材料合同只检查内容责任；无模板时才返回明确标记为建议、非正式且可调整的推荐提纲。

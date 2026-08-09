@@ -70,6 +70,7 @@ class MaterialContractRegistryTests(unittest.TestCase):
             self.fixture["evidence_type"],
         )
         self.assertFalse(self.fixture["model_execution"])
+        self.assertFalse(self.fixture["real_engineering_evidence"])
         self.assertIn("不代表深度支持", self.fixture["statement"])
 
     def test_distributed_template_contains_complete_contract_and_sample_entry(self):

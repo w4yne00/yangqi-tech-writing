@@ -1,0 +1,367 @@
+{
+  "schema_version": "1.0",
+  "benchmark_id": "foundation-12-integration",
+  "case_count": 26,
+  "evidence_type": "deterministic-synthetic-fixture",
+  "model_execution": false,
+  "real_engineering_evidence": false,
+  "permitted_support_claims": [
+    "recognition_coverage",
+    "basic_support"
+  ],
+  "prohibited_claims": [
+    "deep_support",
+    "joint_review_support",
+    "forward_validation",
+    "statistical_stability"
+  ],
+  "statement": "本基准只汇总确定性合成输入对公开数据合同和外部行为的集成验证，属于非真实工程证据，不代表模型运行表现，不解锁深度支持、联审支持、前向验证或统计稳定性声明。",
+  "identity_cases": [
+    {
+      "case_id": "F12-SCENE-FEASIBILITY-STUDY",
+      "coverage_kind": "scene_positive",
+      "input_profile": "identified_material",
+      "source_collection": "scene_positive_cases",
+      "source_case_id": "FOUNDATION-05-SCENE-FEASIBILITY-STUDY",
+      "expected": {
+        "business_domain": "engineering_construction",
+        "lifecycle_position": "initiation",
+        "document_scene": "feasibility_study",
+        "material_subtype": "feasibility_study"
+      }
+    },
+    {
+      "case_id": "F12-SCENE-ARCHITECTURE-DESIGN",
+      "coverage_kind": "scene_positive",
+      "input_profile": "identified_material",
+      "source_collection": "scene_positive_cases",
+      "source_case_id": "FOUNDATION-05-SCENE-ARCHITECTURE-DESIGN",
+      "expected": {
+        "business_domain": "engineering_construction",
+        "lifecycle_position": "design",
+        "document_scene": "architecture_design",
+        "material_subtype": "preliminary_design"
+      }
+    },
+    {
+      "case_id": "F12-SCENE-TECHNICAL-SPEC",
+      "coverage_kind": "scene_positive",
+      "input_profile": "identified_material",
+      "source_collection": "scene_positive_cases",
+      "source_case_id": "FOUNDATION-05-SCENE-TECHNICAL-SPEC",
+      "expected": {
+        "business_domain": "engineering_construction",
+        "lifecycle_position": "procurement",
+        "document_scene": "technical_spec",
+        "material_subtype": "technical_specification"
+      }
+    },
+    {
+      "case_id": "F12-SCENE-BID-RESPONSE",
+      "coverage_kind": "scene_positive",
+      "input_profile": "identified_material",
+      "source_collection": "scene_positive_cases",
+      "source_case_id": "FOUNDATION-05-SCENE-BID-RESPONSE",
+      "expected": {
+        "business_domain": "engineering_construction",
+        "lifecycle_position": "procurement",
+        "document_scene": "bid_response",
+        "material_subtype": "bid_response"
+      }
+    },
+    {
+      "case_id": "F12-SCENE-SECURITY-POLICY",
+      "coverage_kind": "scene_positive",
+      "input_profile": "identified_material",
+      "source_collection": "scene_positive_cases",
+      "source_case_id": "FOUNDATION-05-SCENE-SECURITY-POLICY",
+      "expected": {
+        "business_domain": "governance_operation",
+        "lifecycle_position": "policy_development",
+        "document_scene": "security_policy",
+        "material_subtype": "management_policy"
+      }
+    },
+    {
+      "case_id": "F12-SCENE-PRESENTATION",
+      "coverage_kind": "scene_positive",
+      "input_profile": "identified_material",
+      "source_collection": "scene_positive_cases",
+      "source_case_id": "FOUNDATION-05-SCENE-PRESENTATION",
+      "expected": {
+        "business_domain": "engineering_construction",
+        "lifecycle_position": "implementation",
+        "document_scene": "presentation",
+        "material_subtype": "stage_report"
+      }
+    },
+    {
+      "case_id": "F12-SCENE-REVIEW-ACCEPTANCE",
+      "coverage_kind": "scene_positive",
+      "input_profile": "identified_material",
+      "source_collection": "scene_positive_cases",
+      "source_case_id": "FOUNDATION-05-SCENE-REVIEW-ACCEPTANCE",
+      "expected": {
+        "business_domain": "engineering_construction",
+        "lifecycle_position": "acceptance",
+        "document_scene": "review_acceptance",
+        "material_subtype": "acceptance_report"
+      }
+    },
+    {
+      "case_id": "F12-NEAR-MISS-PRELIMINARY-DESIGN",
+      "coverage_kind": "lifecycle_near_miss",
+      "input_profile": "identified_material",
+      "source_collection": "engineering_construction_cases",
+      "source_case_id": "FOUNDATION-02-PRELIMINARY-DESIGN-NEAR-MISS",
+      "expected": {
+        "business_domain": "engineering_construction",
+        "lifecycle_position": "design",
+        "document_scene": "architecture_design",
+        "material_subtype": "preliminary_design"
+      }
+    },
+    {
+      "case_id": "F12-NEAR-MISS-DETAILED-DESIGN",
+      "coverage_kind": "lifecycle_near_miss",
+      "input_profile": "identified_material",
+      "source_collection": "engineering_construction_cases",
+      "source_case_id": "FOUNDATION-02-DETAILED-DESIGN-NEAR-MISS",
+      "expected": {
+        "business_domain": "engineering_construction",
+        "lifecycle_position": "design",
+        "document_scene": "architecture_design",
+        "material_subtype": "detailed_design"
+      }
+    },
+    {
+      "case_id": "F12-NEAR-MISS-ENGINEERING-IMPLEMENTATION",
+      "coverage_kind": "lifecycle_near_miss",
+      "input_profile": "identified_material",
+      "source_collection": "engineering_construction_cases",
+      "source_case_id": "FOUNDATION-02-ENGINEERING-IMPLEMENTATION-PLAN",
+      "expected": {
+        "business_domain": "engineering_construction",
+        "lifecycle_position": "implementation",
+        "document_scene": "architecture_design",
+        "material_subtype": "engineering_implementation_plan"
+      }
+    },
+    {
+      "case_id": "F12-NEAR-MISS-RESEARCH-IMPLEMENTATION",
+      "coverage_kind": "lifecycle_near_miss",
+      "input_profile": "identified_material",
+      "source_collection": "research_project_cases",
+      "source_case_id": "FOUNDATION-03-RESEARCH-IMPLEMENTATION-PLAN",
+      "expected": {
+        "business_domain": "research_project",
+        "lifecycle_position": "research_implementation",
+        "document_scene": "architecture_design",
+        "material_subtype": "research_implementation_plan"
+      }
+    },
+    {
+      "case_id": "F12-NEAR-MISS-ACCEPTANCE-OUTLINE",
+      "coverage_kind": "lifecycle_near_miss",
+      "input_profile": "identified_material",
+      "source_collection": "engineering_construction_cases",
+      "source_case_id": "FOUNDATION-02-ACCEPTANCE-OUTLINE",
+      "expected": {
+        "business_domain": "engineering_construction",
+        "lifecycle_position": "acceptance",
+        "document_scene": "review_acceptance",
+        "material_subtype": "acceptance_outline"
+      }
+    },
+    {
+      "case_id": "F12-NEAR-MISS-ACCEPTANCE-REPORT",
+      "coverage_kind": "lifecycle_near_miss",
+      "input_profile": "identified_material",
+      "source_collection": "engineering_construction_cases",
+      "source_case_id": "FOUNDATION-02-ACCEPTANCE-REPORT",
+      "expected": {
+        "business_domain": "engineering_construction",
+        "lifecycle_position": "acceptance",
+        "document_scene": "review_acceptance",
+        "material_subtype": "acceptance_report"
+      }
+    },
+    {
+      "case_id": "F12-COMPOSITE-PRELIMINARY-DESIGN-REVIEW",
+      "coverage_kind": "composite_material",
+      "input_profile": "identified_material",
+      "source_collection": "composite_scene_cases",
+      "source_case_id": "FOUNDATION-05-PRELIMINARY-DESIGN-REVIEW-PRESENTATION",
+      "expected": {
+        "business_domain": "engineering_construction",
+        "lifecycle_position": "design",
+        "document_scene": "presentation",
+        "material_subtype": "preliminary_design_review_presentation",
+        "primary_scene": "presentation",
+        "local_scene": "review_acceptance"
+      }
+    },
+    {
+      "case_id": "F12-COMPOSITE-RESEARCH-FINAL-ACCEPTANCE",
+      "coverage_kind": "composite_material",
+      "input_profile": "identified_material",
+      "source_collection": "composite_scene_cases",
+      "source_case_id": "FOUNDATION-05-RESEARCH-FINAL-ACCEPTANCE-PRESENTATION",
+      "expected": {
+        "business_domain": "research_project",
+        "lifecycle_position": "final_acceptance",
+        "document_scene": "presentation",
+        "material_subtype": "research_final_acceptance_presentation",
+        "primary_scene": "presentation",
+        "local_scene": "review_acceptance"
+      }
+    }
+  ],
+  "integration_cases": [
+    {
+      "case_id": "F12-FORCE-NO-STRENGTHENING",
+      "input_profile": "statement_force",
+      "source_case_id": "FOUNDATION-06-STRENGTHENING-NEAR-MISS",
+      "expected": {
+        "allowed_statement_force": "recommended_solution",
+        "action": "preserve_source_force"
+      }
+    },
+    {
+      "case_id": "F12-FORCE-NO-WEAKENING",
+      "input_profile": "statement_force",
+      "source_case_id": "FOUNDATION-06-WEAKENING-NEAR-MISS",
+      "expected": {
+        "allowed_statement_force": "implementation_fact",
+        "action": "preserve_source_force"
+      }
+    },
+    {
+      "case_id": "F12-PROCESSING-QUICK-PATH",
+      "input_profile": "quick_path",
+      "expected": {
+        "processing_mode": "quick_path"
+      }
+    },
+    {
+      "case_id": "F12-PROCESSING-TWO-STAGE",
+      "input_profile": "two_stage",
+      "expected": {
+        "processing_mode": "two_stage"
+      }
+    },
+    {
+      "case_id": "F12-MATERIAL-RELATIONSHIPS",
+      "input_profile": "material_set",
+      "source_case_id": "FOUNDATION-08-RELATION-TYPES",
+      "expected": {
+        "processing_mode": "two_stage",
+        "relationship_types": [
+          "governs",
+          "derives_from",
+          "supersedes",
+          "implements",
+          "verifies",
+          "conflicts_with",
+          "unclear"
+        ],
+        "review_status": "blocked"
+      }
+    },
+    {
+      "case_id": "F12-MATERIAL-CONFLICT-BLOCK",
+      "input_profile": "material_set",
+      "source_case_id": "FOUNDATION-08-CONFLICT-DIMENSIONS",
+      "expected": {
+        "processing_mode": "two_stage",
+        "conflict_dimensions": [
+          "scope",
+          "quantity",
+          "parameter",
+          "responsibility",
+          "time",
+          "conclusion",
+          "statement_force"
+        ],
+        "review_status": "blocked"
+      }
+    },
+    {
+      "case_id": "F12-FORMAL-TEMPLATE-ADAPTATION",
+      "input_profile": "formal_template",
+      "expected": {
+        "mode": "formal_template",
+        "structure_authority": "formal_template"
+      }
+    },
+    {
+      "case_id": "F12-EXTRACTION-GAP-BLOCK",
+      "input_profile": "extraction_gap",
+      "expected": {
+        "status": "blocked",
+        "blocked_claim_ids": [
+          "F12-HIGH-001"
+        ],
+        "blocker": "extraction_gap:F12-GAP-001:claim:F12-HIGH-001"
+      }
+    }
+  ],
+  "project_context_cases": [
+    {
+      "case_id": "F12-CONTEXT-CONFIRMED-UPDATE",
+      "input_profile": "confirmed_then_upstream_change",
+      "expected": {
+        "initial_status": "saved",
+        "changed_status": "saved",
+        "dependent_review_status": "pending_review"
+      }
+    },
+    {
+      "case_id": "F12-CONTEXT-PROJECT-ISOLATION",
+      "input_profile": "cross_project_isolation",
+      "expected": {
+        "exit_code": 1,
+        "error": "project_isolation_violation",
+        "mutation": false
+      }
+    }
+  ],
+  "data_boundary_cases": [
+    {
+      "case_id": "F12-DATA-PROHIBITED-PERSISTENCE",
+      "input_profile": "prohibited_persistence_placeholder",
+      "contains_real_secret": false,
+      "expected_exit_code": 1,
+      "expected_error": "persistence_rejected_sensitive_data"
+    }
+  ],
+  "regression_contracts": {
+    "stable_version": "1.1.0",
+    "behavior_eval_count": 43,
+    "trigger_eval_count": 20,
+    "audit_scripts": [
+      {
+        "script": "scripts/protected_diff.py",
+        "arguments": [
+          "tests/fixtures/before.md",
+          "tests/fixtures/after.md"
+        ],
+        "expected_exit_code": 2
+      },
+      {
+        "script": "scripts/evidence_check.py",
+        "arguments": [
+          "tests/fixtures/evidence-ledger.json"
+        ],
+        "expected_exit_code": 2
+      },
+      {
+        "script": "scripts/style_audit.py",
+        "arguments": [
+          "tests/fixtures/sample.md"
+        ],
+        "expected_exit_code": 0
+      }
+    ]
+  }
+}
