@@ -28,20 +28,20 @@ class ReleaseMetadataTests(unittest.TestCase):
     def test_version_is_stable_release(self):
         path = ROOT / "VERSION"
         self.assertTrue(path.is_file(), "VERSION")
-        self.assertEqual("1.1.0", path.read_text(encoding="utf-8").strip())
+        self.assertEqual("1.1.1", path.read_text(encoding="utf-8").strip())
         for name in ("README.md", "CHANGELOG.md", "ROADMAP.md", "TESTING.md"):
-            self.assertIn("1.1.0", (ROOT / name).read_text(encoding="utf-8"))
+            self.assertIn("1.1.1", (ROOT / name).read_text(encoding="utf-8"))
 
-    def test_readme_reports_v1_1_0_as_stable(self):
+    def test_readme_reports_v1_1_1_as_stable(self):
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
-        self.assertIn("当前稳定版本：`v1.1.0`", readme)
+        self.assertIn("当前稳定版本：`v1.1.1`", readme)
         self.assertNotIn("本地候选版本", readme)
 
     def test_readme_names_release_and_boundaries(self):
         path = ROOT / "README.md"
         self.assertTrue(path.is_file(), "README.md")
         text = path.read_text(encoding="utf-8")
-        for phrase in ["yangqi-tech-writing", "v1.1.0", "七类场景", "H1—H6", "不判断作者身份", "MIT"]:
+        for phrase in ["yangqi-tech-writing", "v1.1.1", "七类场景", "H1—H6", "不判断作者身份", "MIT"]:
             self.assertIn(phrase, text)
 
     def test_release_documents_exist(self):
@@ -68,9 +68,9 @@ class ReleaseMetadataTests(unittest.TestCase):
         self.assertIn("43 项行为评测", readme)
         self.assertNotIn("evals/evals.json         # 24 项行为评测", readme)
 
-    def test_handoff_records_v110_release(self):
+    def test_handoff_records_v111_source_release_and_v110_history(self):
         text = (ROOT / "docs/codex-handoff.md").read_text(encoding="utf-8")
-        for phrase in ("Stable: `v1.1.0`", "FWD-01", "因果外推", "真实前向复测", "66", "released as stable v1.1.0"):
+        for phrase in ("Stable source: `v1.1.1`", "FWD-01", "因果外推", "真实前向复测", "66", "released as stable v1.1.0"):
             self.assertIn(phrase, text)
 
 if __name__ == "__main__":

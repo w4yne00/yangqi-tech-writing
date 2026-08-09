@@ -337,7 +337,7 @@
     }
   ],
   "regression_contracts": {
-    "stable_version": "1.1.0",
+    "stable_version": "1.1.1",
     "behavior_eval_count": 43,
     "trigger_eval_count": 20,
     "stable_contract_test_modules": [

@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-08-09
+
 ### Added
 
 - Foundation 12 新增统一确定性合成证据基准，以 26 个案例集成验证三个业务域、七类场景、生命周期近失配、复合材料、陈述效力、处理模式、材料关系、冲突阻断、项目上下文、正式模板、提取缺口和数据边界。
@@ -89,6 +91,7 @@
 - 本项目不能判断法规、标准或制度对具体项目的法律适用性。
 - 风格命中不构成 AI 作者身份判断。
 
-[Unreleased]: https://github.com/w4yne00/yangqi-tech-writing/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/w4yne00/yangqi-tech-writing/commits/main/
+[1.1.1]: https://github.com/w4yne00/yangqi-tech-writing/compare/v1.1.0...main
 [1.1.0]: https://github.com/w4yne00/yangqi-tech-writing/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/w4yne00/yangqi-tech-writing/releases/tag/v1.0.0

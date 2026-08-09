@@ -1,16 +1,16 @@
 # yangqi-tech-writing
 
 [![Tests](https://github.com/w4yne00/yangqi-tech-writing/actions/workflows/test.yml/badge.svg)](https://github.com/w4yne00/yangqi-tech-writing/actions/workflows/test.yml)
-[![Version](https://img.shields.io/badge/version-v1.1.0-blue.svg)](VERSION)
+[![Version](https://img.shields.io/badge/version-v1.1.1-blue.svg)](VERSION)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 G 企网络安全与信息化技术材料的起草、审阅和保真改写 Skill。
 
 *A writing, review, and fidelity-preserving rewriting skill for cybersecurity and IT documents in Chinese state-owned enterprises.*
 
-当前稳定版本：`v1.1.0`
+当前稳定版本：`v1.1.1`
 
-v1.1.0 增强保护项、证据检查、复合文种路由和 Annotation mode，并增加跨对象计划状态的因果外推边界。上游事项延期只能支持下游风险判断；下游“已延期”须同时具备自身计划基线与可比较材料时点，或由输入、正式来源直接确认。
+v1.1.1 完成阶段感知基础层：在既有七类场景、保护项、证据检查和 H1—H6 质量闸门之上，增加工程建设、科研课题、治理运行三类业务域的生命周期与材料子类型识别，统一材料集关系、写作准备单、项目上下文、正式模板适配和提取缺口阻断。新增能力仍遵守保守证据边界，不以合成案例声称深度支持、联审支持、前向验证或统计稳定性。
 
 ## 项目定位
 
@@ -220,6 +220,7 @@ GitHub Actions 在 Python 3.9、3.11 和 3.12 上运行测试。详细结果和�
 
 - `v1.0.0`：七类场景、24 项评测和三个审计脚本；
 - `v1.1.0`：43 项行为评测、复合文种路由、增强保护项与证据检查，以及因果外推边界；
+- `v1.1.1`：阶段感知基础层、三类业务域、材料集追溯、写作准备单、项目上下文、正式模板适配和统一合成证据基准；
 - `v1.1.x`：兼容的规则、评测和脚本增强；
 - `v1.2.0`：组织级 Style Profile 加载接口；
 - `v2.0.0`：与独立 `yangqi-style-distiller` 建立稳定协议。

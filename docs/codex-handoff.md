@@ -2,7 +2,7 @@
 
 ## Versions and directories
 
-- Stable: `v1.1.0` at repository root and installed Skill.
+- Stable source: `v1.1.1` at repository root; the installed Skill remains `v1.1.0`.
 - Audit baseline: `outputs/yangqi-tech-writing-v1.1.0-rc.1/`.
 - Previous candidate: `v1.1.0-rc.2`, preserved as the forward-test baseline.
 - Release candidate: `v1.1.0-rc.3`, preserved in `work/` and `outputs/` as the verified release source.
@@ -45,13 +45,13 @@ Foundation 10 verification on 2026-08-09 passed 194 root unit tests, including s
 
 Issue #13 adds one maintainer-facing deterministic synthetic benchmark over the existing public perception and project-context seams. Its 26 cases cover the three business domains, seven document scenes, lifecycle near misses, composite materials, statement-force preservation, quick/two-stage processing, material relations, conflict blocking, confirmed context updates, project isolation, formal-template adaptation, extraction-gap blocking and prohibited-persistence boundaries.
 
-Foundation 12 verification on 2026-08-09 passed 202 root unit tests, including seven unified benchmark integration tests and one reference-contract test. The benchmark directly reruns the existing eval immutability, trigger accuracy, audit behavior and stable contract test modules, in addition to checking the 43 behavior evals, 20 trigger boundaries, three audit-script exit contracts and stable `1.1.0` metadata. The preserved rc.3 outputs copy independently passed 66 tests, Skill validation and four product JSON parsers. Every benchmark case is deterministic synthetic input with `model_execution: false` and is non-real engineering evidence. It supports only recognition coverage and basic support claims; it does not establish deep support, joint-review support, forward validation or statistical stability. No stable release was published, the installed Skill was not replaced, and no GitHub Release was created.
+Foundation 12 verification on 2026-08-09 passed 202 root unit tests, including seven unified benchmark integration tests and one reference-contract test. The benchmark directly reruns the existing eval immutability, trigger accuracy, audit behavior and stable contract test modules, in addition to checking the 43 behavior evals, 20 trigger boundaries and three audit-script exit contracts. The preserved rc.3 outputs copy independently passed 66 tests, Skill validation and four product JSON parsers. Every benchmark case is deterministic synthetic input with `model_execution: false` and is non-real engineering evidence. It supports only recognition coverage and basic support claims; it does not establish deep support, joint-review support, forward validation or statistical stability. The source was subsequently versioned as v1.1.1 for Issue #1 closure; the installed Skill was not replaced and no GitHub Release was created.
 
 ## Issue #1 closure scope
 
 The umbrella specification was reviewed against the cumulative Foundation 01–12 implementation using `v1.1.0` as the fixed point. Three remaining public-contract gaps were closed: formal templates can carry explicit semantic responsibility mappings without requiring title equality or inferring completeness from a recommended outline; recognized complete-create and material-set tasks retain a writing preparation sheet when extraction gaps force `conservative_audit`; and the perception request now exposes and enforces an unknown-field policy, with schema objects rejecting unknown fields, locator objects remaining extensible, and task scope limited to `document` or `local`.
 
-Issue #1 closure verification on 2026-08-09 passed 205 root unit tests, Python bytecode compilation, the three CLI smoke contracts with expected exits `2/2/0`, five product JSON parsers, the material-contract template validator and root Skill validation. The preserved rc.3 outputs copy remained read-only and independently passed its 66 tests, Skill validation and four product JSON parsers. No deep support, joint-review support, forward-validation or statistical-stability claim was added; the stable version, installed Skill and preserved outputs candidates were not replaced.
+Issue #1 closure verification on 2026-08-09 passed 205 root unit tests, Python bytecode compilation, the three CLI smoke contracts with expected exits `2/2/0`, five product JSON parsers, the material-contract template validator and root Skill validation. The preserved rc.3 outputs copy remained read-only and independently passed its 66 tests, Skill validation and four product JSON parsers. No deep support, joint-review support, forward-validation or statistical-stability claim was added; the source stable version was advanced to v1.1.1, while the installed Skill and preserved outputs candidates were not replaced.
 
 ## Release status
 
@@ -71,4 +71,5 @@ The user authorized stable integration, local Skill replacement, commit and GitH
 - Foundation 11 已建立材料合同与脱敏样本登记入口；合成夹具保持 `basic_support`，不作为深度或联审能力证据，根目录回归为 134 项。
 - Foundation 10 已扩展材料标准化视图并增加正式模板适配与提取缺口阻断；正式模板控制结构，无模板时只给建议提纲，三类提取缺口仅阻断显式依赖的高风险结论，根目录回归为 194 项。
 - Foundation 12 已建立 26 案例统一确定性合成证据基准，根目录回归为 202 项；全部案例属于非真实工程证据，只支持识别覆盖和基础支持声明，不构成深度支持、联审支持、前向验证或统计稳定性证明。
+- Issue #1 已按 205 项根目录测试完成源码收口并将稳定版本更新为 v1.1.1；本地安装副本仍为 v1.1.0，未创建 GitHub Release。
 - 本次已授权提交、推送和覆盖安装；GitHub Release 仍需单独授权。
