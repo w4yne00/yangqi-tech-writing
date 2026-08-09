@@ -33,6 +33,14 @@ Project-restricted samples are limited to private review. Prohibited-persistence
 
 Foundation 11 verification on 2026-07-30 passed 134 root unit tests, including 19 material-contract registry behavior tests. Post-review corrections require intended uses to stay within the explicit authorization scope, keep pending or rejected samples out of reusable uses, structure and validate statement-force transitions, keep the synthetic fixture at `basic_support`, and test that forward evidence requires recorded model execution.
 
+## Foundation 10 scope
+
+Issue #11 extends the highest-level perception seam with a richer material normalized view, formal-template adaptation and extraction-gap blocking. The view can preserve source filename, title/clause/table/figure hierarchy, page/table/figure locators, table relations, citation locations and extraction gaps while remaining a derived, non-formal input.
+
+Formal templates control chapters, numbering, tables and required items; material contracts only check content responsibilities. Without a formal template, the decision returns an explicitly suggested, non-formal and adjustable outline. OCR uncertainty, lost table relationships and unrecoverable figures block only explicitly dependent high-risk claims; low-risk dependencies are recorded without broadening the blocker.
+
+Foundation 10 verification on 2026-08-09 passed 194 root unit tests, including seven new highest-level behavior tests and one reference-contract test. Post-review regressions preserve an existing evidence-conflict action alongside the independent extraction-gap action and prevent complete-create or material-set routing from overriding an extraction-gap blocker with `two_stage`. The three CLI smoke tests returned 2/2/0, four product and two existing forward JSON files parsed, root quick validation passed, and the preserved rc.3 outputs copy independently passed its 66 tests, quick validation and four product JSON parsers. The core still uses only the Python standard library and does not implement DOCX, PDF, Excel, OCR or image parsers. The old outputs candidate was verified read-only and was not replaced.
+
 ## Release status
 
 The FWD-01, unfinished-without-baseline and explicit-overdue forward cases passed, and the clean outputs copy passed independent verification. The candidate was released as stable v1.1.0 after 66 local tests passed.
@@ -49,4 +57,5 @@ The user authorized stable integration, local Skill replacement, commit and GitH
 - rc.3 已集成为稳定版 v1.1.0；根目录与安装副本的发布验证均以 66 项测试为准。
 - 前向案例每项只运行 1 次，不得包装为统计稳定性证明。
 - Foundation 11 已建立材料合同与脱敏样本登记入口；合成夹具保持 `basic_support`，不作为深度或联审能力证据，根目录回归为 134 项。
+- Foundation 10 已扩展材料标准化视图并增加正式模板适配与提取缺口阻断；正式模板控制结构，无模板时只给建议提纲，三类提取缺口仅阻断显式依赖的高风险结论，根目录回归为 194 项。
 - 本次已授权提交、推送和覆盖安装；GitHub Release 仍需单独授权。

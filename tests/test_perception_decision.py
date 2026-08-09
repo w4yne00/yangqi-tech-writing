@@ -1605,6 +1605,345 @@ class PerceptionDecisionTests(unittest.TestCase):
             result["material_view"]["locator"],
         )
 
+    def test_normalized_view_preserves_structure_relations_and_source_locations(self):
+        request = deepcopy(self.fixture["cases"][0]["request"])
+        request["material_view"].update(
+            {
+                "source_filename": "某项目初步设计说明书.docx",
+                "structural_nodes": [
+                    {
+                        "node_id": "N-5",
+                        "node_type": "title",
+                        "label": "5 网络架构",
+                        "locator": {"page": 16},
+                    },
+                    {
+                        "node_id": "N-5.2",
+                        "node_type": "clause",
+                        "label": "5.2 安全域边界",
+                        "parent_id": "N-5",
+                        "locator": {"page": 17},
+                    },
+                    {
+                        "node_id": "T-5-1",
+                        "node_type": "table",
+                        "label": "安全域通信关系",
+                        "parent_id": "N-5.2",
+                        "locator": {"page": 18, "table_number": "表5-1"},
+                    },
+                    {
+                        "node_id": "F-5-1",
+                        "node_type": "figure",
+                        "label": "安全域拓扑",
+                        "parent_id": "N-5.2",
+                        "locator": {"page": 19, "figure_number": "图5-1"},
+                    },
+                ],
+                "table_relations": [
+                    {
+                        "relation_id": "TR-001",
+                        "table_id": "T-5-1",
+                        "relation_type": "header_applies_to_column",
+                        "from_ref": "R1C2",
+                        "to_ref": "C2",
+                    }
+                ],
+                "citation_locations": [
+                    {
+                        "citation_id": "CIT-001",
+                        "source_ref": "《网络安全技术要求》第6.2条",
+                        "locator": {"node_id": "N-5.2", "page": 17},
+                    }
+                ],
+                "extraction_gaps": [
+                    {
+                        "gap_id": "GAP-001",
+                        "gap_type": "ocr_uncertain",
+                        "description": "扫描页中的带宽参数置信度不足。",
+                        "locator": {"page": 20},
+                        "affected_claim_ids": [],
+                    }
+                ],
+            }
+        )
+
+        result = self.run_decision(request)["material_view"]
+
+        self.assertEqual(
+            "某项目初步设计说明书.docx", result["source_filename"]
+        )
+        self.assertEqual(
+            ["title", "clause", "table", "figure"],
+            [node["node_type"] for node in result["structural_nodes"]],
+        )
+        self.assertEqual(
+            "表5-1",
+            result["structural_nodes"][2]["locator"]["table_number"],
+        )
+        self.assertEqual(
+            "图5-1",
+            result["structural_nodes"][3]["locator"]["figure_number"],
+        )
+        self.assertEqual(
+            "header_applies_to_column",
+            result["table_relations"][0]["relation_type"],
+        )
+        self.assertEqual(
+            {"node_id": "N-5.2", "page": 17},
+            result["citation_locations"][0]["locator"],
+        )
+        self.assertEqual(
+            "ocr_uncertain", result["extraction_gaps"][0]["gap_type"]
+        )
+
+    def test_formal_template_controls_structure_while_contract_checks_content(self):
+        request = deepcopy(self.fixture["cases"][0]["request"])
+        request["formal_template"] = {
+            "template_id": "TPL-001",
+            "template_name": "初步设计报告正式模板",
+            "source_ref": "用户提供的正式模板文件",
+            "controls": {
+                "chapters": ["1 编制依据", "2 总体设计", "3 分项设计"],
+                "numbering": "preserve",
+                "tables": ["主要设备材料表"],
+                "required_items": ["编制人", "审核人", "批准人"],
+            },
+        }
+
+        adaptation = self.run_decision(request)["decision"][
+            "structure_adaptation"
+        ]
+
+        self.assertEqual("formal_template", adaptation["mode"])
+        self.assertEqual("formal_template", adaptation["structure_authority"])
+        self.assertEqual("TPL-001", adaptation["formal_template"]["template_id"])
+        self.assertEqual(
+            ["chapters", "numbering", "tables", "required_items"],
+            adaptation["controlled_dimensions"],
+        )
+        self.assertEqual(
+            "content_responsibility_check_only",
+            adaptation["material_contract_role"],
+        )
+        self.assertFalse(adaptation["material_contract_may_override_structure"])
+        self.assertNotIn("recommended_outline", adaptation)
+
+    def test_missing_formal_template_returns_only_a_labeled_recommended_outline(self):
+        request = deepcopy(self.fixture["cases"][0]["request"])
+
+        adaptation = self.run_decision(request)["decision"][
+            "structure_adaptation"
+        ]
+
+        self.assertEqual("recommended_outline", adaptation["mode"])
+        self.assertEqual("none", adaptation["structure_authority"])
+        self.assertEqual(
+            "content_responsibility_basis",
+            adaptation["material_contract_role"],
+        )
+        self.assertNotIn("formal_template", adaptation)
+        outline = adaptation["recommended_outline"]
+        self.assertEqual("建议提纲", outline["label"])
+        self.assertEqual("suggested", outline["status"])
+        self.assertFalse(outline["is_formal_template"])
+        self.assertTrue(outline["adjustable"])
+        self.assertEqual(
+            ["scene.architecture_design"], outline["basis_contracts"]
+        )
+        self.assertEqual(
+            [
+                "设计依据与边界",
+                "现状与约束",
+                "总体设计",
+                "分项设计",
+                "实施与验证",
+            ],
+            outline["sections"],
+        )
+
+    def test_extraction_gaps_block_dependent_high_risk_conclusions(self):
+        gap_cases = [
+            ("ocr_uncertain", {"page": 20}),
+            (
+                "table_relationship_lost",
+                {"page": 21, "table_number": "表6-2"},
+            ),
+            (
+                "figure_unrecoverable",
+                {"page": 22, "figure_number": "图6-1"},
+            ),
+        ]
+        for index, (gap_type, locator) in enumerate(gap_cases, start=1):
+            with self.subTest(gap_type=gap_type):
+                request = deepcopy(self.fixture["cases"][0]["request"])
+                request["claims"] = [
+                    {
+                        "claim_id": "F10-HIGH-001",
+                        "text": "该设计已满足验收要求。",
+                        "evidence_status": "SUPPORTED",
+                        "statement_force": "acceptance_conclusion",
+                        "source_ref": "标准化视图中的对应表图",
+                        "risk": "high",
+                    }
+                ]
+                request["material_view"]["extraction_gaps"] = [
+                    {
+                        "gap_id": "F10-GAP-{:03d}".format(index),
+                        "gap_type": gap_type,
+                        "description": "影响验收结论所依赖的提取内容。",
+                        "locator": locator,
+                        "affected_claim_ids": ["F10-HIGH-001"],
+                    }
+                ]
+
+                decision = self.run_decision(request)["decision"]
+
+                gap_id = "F10-GAP-{:03d}".format(index)
+                self.assertEqual(
+                    "blocked", decision["extraction_gap_review"]["status"]
+                )
+                self.assertEqual(
+                    ["F10-HIGH-001"],
+                    decision["extraction_gap_review"]["blocked_claim_ids"],
+                )
+                self.assertIn(
+                    "extraction_gap:{}:claim:F10-HIGH-001".format(gap_id),
+                    decision["blockers"],
+                )
+                self.assertEqual(
+                    "block_extraction_gap",
+                    decision["claim_decisions"][0][
+                        "extraction_gap_action"
+                    ],
+                )
+                self.assertEqual(
+                    "preserve", decision["claim_decisions"][0]["action"]
+                )
+                self.assertIsNone(
+                    decision["claim_decisions"][0][
+                        "allowed_statement_force"
+                    ]
+                )
+                self.assertEqual(
+                    "conservative_audit", decision["processing_mode"]
+                )
+
+    def test_extraction_gap_without_high_risk_dependency_is_recorded_not_blocked(self):
+        request = deepcopy(self.fixture["cases"][0]["request"])
+        request["claims"] = [
+            {
+                "claim_id": "F10-LOW-001",
+                "text": "建议后续复核图示标注。",
+                "evidence_status": "SUPPORTED",
+                "statement_force": "recommended_solution",
+                "source_ref": "图示复核记录",
+                "risk": "low",
+            }
+        ]
+        request["material_view"]["extraction_gaps"] = [
+            {
+                "gap_id": "F10-GAP-LOW",
+                "gap_type": "figure_unrecoverable",
+                "description": "图示局部无法恢复。",
+                "locator": {"page": 22, "figure_number": "图6-1"},
+                "affected_claim_ids": ["F10-LOW-001"],
+            }
+        ]
+
+        decision = self.run_decision(request)["decision"]
+
+        self.assertEqual("recorded", decision["extraction_gap_review"]["status"])
+        self.assertEqual([], decision["extraction_gap_review"]["blocked_claim_ids"])
+        self.assertEqual([], decision["blockers"])
+        self.assertEqual("preserve", decision["claim_decisions"][0]["action"])
+
+    def test_extraction_gap_keeps_an_existing_evidence_conflict_action(self):
+        request = deepcopy(self.fixture["cases"][0]["request"])
+        request["claims"] = [
+            {
+                "claim_id": "F10-CONFLICT-001",
+                "text": "本期建设范围包括32家所属单位。",
+                "evidence_status": "CONTRADICTED",
+                "statement_force": "approved_boundary",
+                "source_ref": "批复文件第3条",
+                "risk": "high",
+            }
+        ]
+        request["material_view"]["extraction_gaps"] = [
+            {
+                "gap_id": "F10-GAP-CONFLICT",
+                "gap_type": "ocr_uncertain",
+                "description": "范围数字的 OCR 结果不确定。",
+                "locator": {"page": 8},
+                "affected_claim_ids": ["F10-CONFLICT-001"],
+            }
+        ]
+
+        decision = self.run_decision(request)["decision"]
+        claim = decision["claim_decisions"][0]
+
+        self.assertEqual("block_conflict", claim["action"])
+        self.assertEqual(
+            "block_extraction_gap", claim["extraction_gap_action"]
+        )
+        self.assertIn("claim:F10-CONFLICT-001", decision["blockers"])
+        self.assertIn(
+            "extraction_gap:F10-GAP-CONFLICT:claim:F10-CONFLICT-001",
+            decision["blockers"],
+        )
+
+    def test_extraction_gap_blocker_is_not_overridden_by_two_stage_routing(self):
+        material_set_case = next(
+            item
+            for item in self.fixture["material_set_cases"]
+            if item["case_id"] == "FOUNDATION-08-RELATION-TYPES"
+        )
+        requests = []
+
+        create_request = deepcopy(self.fixture["cases"][0]["request"])
+        create_request["task"] = {
+            "instruction": "新建一份完整的初步设计说明书。",
+            "mode": "create",
+            "scope": "document",
+        }
+        requests.append(("complete_create", create_request))
+
+        material_set_request = deepcopy(
+            self.fixture["cases"][0]["request"]
+        )
+        material_set_request["material_set"] = deepcopy(
+            material_set_case["material_set"]
+        )
+        requests.append(("material_set", material_set_request))
+
+        for case_id, request in requests:
+            with self.subTest(case_id=case_id):
+                request["claims"] = [
+                    {
+                        "claim_id": "F10-HIGH-TWO-STAGE",
+                        "text": "该设计已满足验收要求。",
+                        "evidence_status": "SUPPORTED",
+                        "statement_force": "acceptance_conclusion",
+                        "source_ref": "标准化视图中的图示",
+                        "risk": "high",
+                    }
+                ]
+                request["material_view"]["extraction_gaps"] = [
+                    {
+                        "gap_id": "F10-GAP-TWO-STAGE",
+                        "gap_type": "figure_unrecoverable",
+                        "description": "验收结论依赖的图示无法恢复。",
+                        "locator": {"page": 22, "figure_number": "图6-1"},
+                        "affected_claim_ids": ["F10-HIGH-TWO-STAGE"],
+                    }
+                ]
+
+                decision = self.run_decision(request)["decision"]
+
+                self.assertEqual("blocked", decision["extraction_gap_review"]["status"])
+                self.assertEqual("conservative_audit", decision["processing_mode"])
+                self.assertNotIn("writing_preparation_sheet", decision)
+
     def test_non_review_task_does_not_claim_basic_support(self):
         request = deepcopy(self.fixture["cases"][0]["request"])
         request["task"].update(

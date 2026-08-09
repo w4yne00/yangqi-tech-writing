@@ -6,6 +6,31 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class ReferenceContractTests(unittest.TestCase):
+    def test_formal_template_adaptation_preserves_structure_and_blocks_gaps(self):
+        text = (ROOT / "references/formal-template-adaptation.md").read_text(
+            encoding="utf-8"
+        )
+        for phrase in [
+            "`source_id`",
+            "`source_filename`",
+            "`material_status`",
+            "`structural_nodes`",
+            "`table_relations`",
+            "`citation_locations`",
+            "`extraction_gaps`",
+            "不是新的正式材料",
+            "正式模板控制章节、编号、表格和必填项",
+            "内容责任",
+            "建议提纲",
+            "OCR 不确定",
+            "表格关系丢失",
+            "图示无法恢复",
+            "高风险结论",
+            "不实现 DOCX、PDF、Excel、OCR 或图像解析器",
+            "Python 标准库",
+        ]:
+            self.assertIn(phrase, text)
+
     def test_governance_operation_reference_defines_catalog_and_boundaries(self):
         text = (ROOT / "references/governance-operation.md").read_text(
             encoding="utf-8"

@@ -10,6 +10,61 @@ import sys
 
 SCHEMA_VERSION = "1.0"
 
+STRUCTURAL_NODE_TYPES = {"title", "clause", "table", "figure"}
+EXTRACTION_GAP_TYPES = {
+    "ocr_uncertain",
+    "table_relationship_lost",
+    "figure_unrecoverable",
+}
+CLAIM_RISKS = {"low", "medium", "high"}
+RECOMMENDED_OUTLINE_SECTIONS = {
+    "feasibility_study": [
+        "编制依据与范围",
+        "现状与问题",
+        "方案比选",
+        "实施条件与投资",
+        "风险与结论",
+    ],
+    "architecture_design": [
+        "设计依据与边界",
+        "现状与约束",
+        "总体设计",
+        "分项设计",
+        "实施与验证",
+    ],
+    "technical_spec": [
+        "范围与依据",
+        "技术要求",
+        "接口与边界",
+        "验证与验收",
+    ],
+    "bid_response": [
+        "应答范围",
+        "逐项应答",
+        "偏离与说明",
+        "交付与保障",
+    ],
+    "security_policy": [
+        "依据与适用范围",
+        "职责与控制要求",
+        "执行与检查",
+        "例外与处置",
+    ],
+    "presentation": [
+        "汇报范围",
+        "当前状态",
+        "关键问题",
+        "后续安排",
+    ],
+    "review_acceptance": [
+        "评审或验收依据",
+        "对象与范围",
+        "证据与结果",
+        "问题与整改",
+        "结论与待确认事项",
+    ],
+}
+
 CONTENT_CONTRACTS = [
     "common.protected_spans",
     "common.evidence_policy",
@@ -871,6 +926,157 @@ def require_text(mapping, field):
     return value.strip()
 
 
+def has_usable_locator_value(locator):
+    return any(
+        isinstance(value, (str, int, float))
+        and not isinstance(value, bool)
+        and str(value).strip()
+        for value in locator.values()
+    )
+
+
+def validate_locator(raw_locator, field):
+    locator = require_mapping(raw_locator, field)
+    if not has_usable_locator_value(locator):
+        raise RequestError("{} 必须包含可用定位值".format(field))
+    return locator
+
+
+def validate_structural_nodes(raw_nodes):
+    if raw_nodes is None:
+        return None
+    if not isinstance(raw_nodes, list):
+        raise RequestError("material_view.structural_nodes 必须是数组")
+
+    nodes = []
+    node_ids = set()
+    for index, raw_node in enumerate(raw_nodes):
+        field = "material_view.structural_nodes[{}]".format(index)
+        node = require_mapping(raw_node, field)
+        node_id = require_text(node, "node_id")
+        if node_id in node_ids:
+            raise RequestError("material_view.structural_nodes.node_id 不得重复")
+        node_ids.add(node_id)
+        node_type = require_text(node, "node_type")
+        if node_type not in STRUCTURAL_NODE_TYPES:
+            raise RequestError("{}.node_type 不是受支持的结构节点类型".format(field))
+        normalized = {
+            "node_id": node_id,
+            "node_type": node_type,
+            "label": require_text(node, "label"),
+            "locator": validate_locator(
+                node.get("locator"), "{}.locator".format(field)
+            ),
+        }
+        if "parent_id" in node:
+            normalized["parent_id"] = require_text(node, "parent_id")
+        nodes.append(normalized)
+
+    for node in nodes:
+        parent_id = node.get("parent_id")
+        if parent_id == node["node_id"] or (
+            parent_id is not None and parent_id not in node_ids
+        ):
+            raise RequestError(
+                "material_view.structural_nodes.parent_id 必须引用其他已声明节点"
+            )
+    return nodes
+
+
+def validate_table_relations(raw_relations):
+    if raw_relations is None:
+        return None
+    if not isinstance(raw_relations, list):
+        raise RequestError("material_view.table_relations 必须是数组")
+
+    relations = []
+    relation_ids = set()
+    for index, raw_relation in enumerate(raw_relations):
+        field = "material_view.table_relations[{}]".format(index)
+        relation = require_mapping(raw_relation, field)
+        relation_id = require_text(relation, "relation_id")
+        if relation_id in relation_ids:
+            raise RequestError("material_view.table_relations.relation_id 不得重复")
+        relation_ids.add(relation_id)
+        relations.append(
+            {
+                "relation_id": relation_id,
+                "table_id": require_text(relation, "table_id"),
+                "relation_type": require_text(relation, "relation_type"),
+                "from_ref": require_text(relation, "from_ref"),
+                "to_ref": require_text(relation, "to_ref"),
+            }
+        )
+    return relations
+
+
+def validate_citation_locations(raw_citations):
+    if raw_citations is None:
+        return None
+    if not isinstance(raw_citations, list):
+        raise RequestError("material_view.citation_locations 必须是数组")
+
+    citations = []
+    citation_ids = set()
+    for index, raw_citation in enumerate(raw_citations):
+        field = "material_view.citation_locations[{}]".format(index)
+        citation = require_mapping(raw_citation, field)
+        citation_id = require_text(citation, "citation_id")
+        if citation_id in citation_ids:
+            raise RequestError(
+                "material_view.citation_locations.citation_id 不得重复"
+            )
+        citation_ids.add(citation_id)
+        citations.append(
+            {
+                "citation_id": citation_id,
+                "source_ref": require_text(citation, "source_ref"),
+                "locator": validate_locator(
+                    citation.get("locator"), "{}.locator".format(field)
+                ),
+            }
+        )
+    return citations
+
+
+def validate_extraction_gaps(raw_gaps):
+    if raw_gaps is None:
+        return None
+    if not isinstance(raw_gaps, list):
+        raise RequestError("material_view.extraction_gaps 必须是数组")
+
+    gaps = []
+    gap_ids = set()
+    for index, raw_gap in enumerate(raw_gaps):
+        field = "material_view.extraction_gaps[{}]".format(index)
+        gap = require_mapping(raw_gap, field)
+        gap_id = require_text(gap, "gap_id")
+        if gap_id in gap_ids:
+            raise RequestError("material_view.extraction_gaps.gap_id 不得重复")
+        gap_ids.add(gap_id)
+        gap_type = require_text(gap, "gap_type")
+        if gap_type not in EXTRACTION_GAP_TYPES:
+            raise RequestError("{}.gap_type 不是受支持的提取缺口类型".format(field))
+        affected_claim_ids = gap.get("affected_claim_ids")
+        if not isinstance(affected_claim_ids, list) or any(
+            not isinstance(claim_id, str) or not claim_id.strip()
+            for claim_id in affected_claim_ids
+        ):
+            raise RequestError("{}.affected_claim_ids 必须是字符串数组".format(field))
+        gaps.append(
+            {
+                "gap_id": gap_id,
+                "gap_type": gap_type,
+                "description": require_text(gap, "description"),
+                "locator": validate_locator(
+                    gap.get("locator"), "{}.locator".format(field)
+                ),
+                "affected_claim_ids": list(dict.fromkeys(affected_claim_ids)),
+            }
+        )
+    return gaps
+
+
 def validate_material_view(raw_view):
     view = require_mapping(raw_view, "material_view")
     if view.get("schema_version") != SCHEMA_VERSION:
@@ -885,6 +1091,15 @@ def validate_material_view(raw_view):
     source_id = require_text(view, "source_id")
     material_status = require_text(view, "material_status")
     title = require_text(view, "title")
+    source_filename = None
+    if "source_filename" in view:
+        source_filename = require_text(view, "source_filename")
+    structural_nodes = validate_structural_nodes(view.get("structural_nodes"))
+    table_relations = validate_table_relations(view.get("table_relations"))
+    citation_locations = validate_citation_locations(
+        view.get("citation_locations")
+    )
+    extraction_gaps = validate_extraction_gaps(view.get("extraction_gaps"))
 
     segments = view.get("segments")
     if not isinstance(segments, list) or not segments:
@@ -906,12 +1121,7 @@ def validate_material_view(raw_view):
             raw_locator,
             "material_view.segments[{}].locator".format(index),
         )
-        has_usable_locator = any(
-            isinstance(value, (str, int, float))
-            and not isinstance(value, bool)
-            and str(value).strip()
-            for value in candidate_locator.values()
-        )
+        has_usable_locator = has_usable_locator_value(candidate_locator)
         if locator is None and has_usable_locator:
             locator = candidate_locator
 
@@ -920,10 +1130,15 @@ def validate_material_view(raw_view):
 
     return {
         "source_id": source_id,
+        "source_filename": source_filename,
         "material_status": material_status,
         "title": title,
         "locator": locator,
         "searchable_text": "\n".join(texts),
+        "structural_nodes": structural_nodes,
+        "table_relations": table_relations,
+        "citation_locations": citation_locations,
+        "extraction_gaps": extraction_gaps,
     }
 
 
@@ -935,6 +1150,82 @@ def validate_task(raw_task):
         raise RequestError("task.mode 不是受支持的任务模式")
     scope = require_text(task, "scope")
     return {"instruction": instruction, "mode": mode, "scope": scope}
+
+
+def validate_text_list(mapping, field):
+    value = mapping.get(field)
+    if not isinstance(value, list) or any(
+        not isinstance(item, str) or not item.strip() for item in value
+    ):
+        raise RequestError("{} 必须是字符串数组".format(field))
+    return [item.strip() for item in value]
+
+
+def validate_formal_template(raw_template):
+    if raw_template is None:
+        return None
+    template = require_mapping(raw_template, "formal_template")
+    controls = require_mapping(
+        template.get("controls"), "formal_template.controls"
+    )
+    return {
+        "template_id": require_text(template, "template_id"),
+        "template_name": require_text(template, "template_name"),
+        "source_ref": require_text(template, "source_ref"),
+        "controls": {
+            "chapters": validate_text_list(controls, "chapters"),
+            "numbering": require_text(controls, "numbering"),
+            "tables": validate_text_list(controls, "tables"),
+            "required_items": validate_text_list(
+                controls, "required_items"
+            ),
+        },
+    }
+
+
+def build_structure_adaptation(formal_template, decision):
+    if formal_template is not None:
+        return {
+            "mode": "formal_template",
+            "structure_authority": "formal_template",
+            "formal_template": formal_template,
+            "controlled_dimensions": [
+                "chapters",
+                "numbering",
+                "tables",
+                "required_items",
+            ],
+            "material_contract_role": "content_responsibility_check_only",
+            "material_contract_may_override_structure": False,
+        }
+
+    scene = decision["document_scene"]["value"]
+    basis_contracts = []
+    if scene in SCENE_CONTRACTS:
+        basis_contracts.append(SCENE_CONTRACTS[scene])
+    composite_routing = decision.get("composite_routing")
+    if composite_routing is not None:
+        local_scene = composite_routing["local_scene"]["value"]
+        local_contract = SCENE_CONTRACTS[local_scene]
+        if local_contract not in basis_contracts:
+            basis_contracts.append(local_contract)
+    sections = RECOMMENDED_OUTLINE_SECTIONS.get(
+        scene,
+        ["依据与范围", "主要内容", "风险与待确认事项"],
+    )
+    return {
+        "mode": "recommended_outline",
+        "structure_authority": "none",
+        "material_contract_role": "content_responsibility_basis",
+        "recommended_outline": {
+            "label": "建议提纲",
+            "status": "suggested",
+            "is_formal_template": False,
+            "adjustable": True,
+            "basis_contracts": basis_contracts,
+            "sections": list(sections),
+        },
+    }
 
 
 def validate_claims(raw_claims):
@@ -996,6 +1287,10 @@ def validate_claims(raw_claims):
                 "{}.source_ref 是 SUPPORTED 陈述的必填项".format(field)
             )
 
+        risk = claim.get("risk", "medium")
+        if not isinstance(risk, str) or risk not in CLAIM_RISKS:
+            raise RequestError("{}.risk 不是受支持的风险级别".format(field))
+
         claims.append(
             {
                 "claim_id": claim_id,
@@ -1004,6 +1299,7 @@ def validate_claims(raw_claims):
                 "statement_force": statement_force,
                 "requested_statement_force": requested_force,
                 "source_ref": source_ref,
+                "risk": risk,
             }
         )
     return claims
@@ -1389,6 +1685,7 @@ def decide_claim(claim):
             "requested_statement_force": requested_force,
             "allowed_statement_force": allowed_force,
             "action": action,
+            "risk": claim["risk"],
         },
         pending,
         blockers,
@@ -1407,6 +1704,79 @@ def apply_claim_boundaries(decision, claims):
     decision["claim_decisions"] = claim_decisions
     decision["pending_confirmations"] = pending
     decision["blockers"] = blockers
+    return decision
+
+
+def apply_extraction_gap_boundaries(decision, gaps, claims):
+    gaps = gaps or []
+    claims_by_id = {claim["claim_id"]: claim for claim in claims}
+    claim_decisions = {
+        item["claim_id"]: item for item in decision["claim_decisions"]
+    }
+    review_gaps = []
+    blocked_claim_ids = []
+    blockers = list(decision["blockers"])
+
+    for gap in gaps:
+        unknown_claim_ids = [
+            claim_id
+            for claim_id in gap["affected_claim_ids"]
+            if claim_id not in claims_by_id
+        ]
+        if unknown_claim_ids:
+            raise RequestError(
+                "material_view.extraction_gaps.affected_claim_ids 引用了未声明 Claim: {}".format(
+                    ", ".join(unknown_claim_ids)
+                )
+            )
+        gap_blocked_claim_ids = [
+            claim_id
+            for claim_id in gap["affected_claim_ids"]
+            if claims_by_id[claim_id]["risk"] == "high"
+        ]
+        for claim_id in gap_blocked_claim_ids:
+            claim_decision = claim_decisions[claim_id]
+            claim_decision["allowed_statement_force"] = None
+            claim_decision[
+                "extraction_gap_action"
+            ] = "block_extraction_gap"
+            claim_decision.setdefault(
+                "blocked_by_extraction_gap_ids", []
+            ).append(gap["gap_id"])
+            if claim_id not in blocked_claim_ids:
+                blocked_claim_ids.append(claim_id)
+            blocker = "extraction_gap:{}:claim:{}".format(
+                gap["gap_id"], claim_id
+            )
+            if blocker not in blockers:
+                blockers.append(blocker)
+        review_gaps.append(
+            {
+                "gap_id": gap["gap_id"],
+                "gap_type": gap["gap_type"],
+                "locator": gap["locator"],
+                "affected_claim_ids": gap["affected_claim_ids"],
+                "blocked_claim_ids": gap_blocked_claim_ids,
+                "action": (
+                    "block_high_risk_dependent_claims"
+                    if gap_blocked_claim_ids
+                    else "record_for_source_review"
+                ),
+            }
+        )
+
+    decision["blockers"] = blockers
+    decision["extraction_gap_review"] = {
+        "status": (
+            "blocked"
+            if blocked_claim_ids
+            else "recorded"
+            if gaps
+            else "not_provided"
+        ),
+        "gaps": review_gaps,
+        "blocked_claim_ids": blocked_claim_ids,
+    }
     return decision
 
 
@@ -2369,6 +2739,7 @@ def build_perception_decision(request):
     request = require_mapping(request, "request")
     task = validate_task(request.get("task"))
     view = validate_material_view(request.get("material_view"))
+    formal_template = validate_formal_template(request.get("formal_template"))
     claims = validate_claims(request.get("claims"))
     material_set = validate_material_set(request.get("material_set"))
     text = "\n".join(
@@ -2413,6 +2784,9 @@ def build_perception_decision(request):
     else:
         decision = build_unclear_decision(task, text)
     decision = apply_claim_boundaries(decision, claims)
+    decision = apply_extraction_gap_boundaries(
+        decision, view["extraction_gaps"], claims
+    )
     if (
         decision["processing_mode"] == "quick_path"
         and (
@@ -2445,7 +2819,12 @@ def build_perception_decision(request):
         }
         and decision["material_subtype"]["value"] != "unknown"
     )
-    if complete_plan_creation or material_set is not None:
+    extraction_gap_blocked = (
+        decision["extraction_gap_review"]["status"] == "blocked"
+    )
+    if (
+        complete_plan_creation or material_set is not None
+    ) and not extraction_gap_blocked:
         decision["processing_mode"] = "two_stage"
         decision["load_contracts"].append(
             "common.writing_preparation"
@@ -2453,16 +2832,30 @@ def build_perception_decision(request):
         decision["writing_preparation_sheet"] = (
             build_writing_preparation_sheet(decision, view, claims)
         )
+    decision["structure_adaptation"] = build_structure_adaptation(
+        formal_template, decision
+    )
+
+    material_view_result = {
+        "source_id": view["source_id"],
+        "material_status": view["material_status"],
+        "locator": view["locator"],
+        "is_formal_material": False,
+        "view_role": "derived_normalized_view",
+    }
+    for field in (
+        "source_filename",
+        "structural_nodes",
+        "table_relations",
+        "citation_locations",
+        "extraction_gaps",
+    ):
+        if view[field] is not None:
+            material_view_result[field] = view[field]
 
     return {
         "schema_version": SCHEMA_VERSION,
-        "material_view": {
-            "source_id": view["source_id"],
-            "material_status": view["material_status"],
-            "locator": view["locator"],
-            "is_formal_material": False,
-            "view_role": "derived_normalized_view",
-        },
+        "material_view": material_view_result,
         "decision": decision,
     }
 

@@ -36,6 +36,11 @@ python3 "$HOME/.agents/skills/skill-creator/scripts/quick_validate.py" .
 
 ## Results
 
+- Foundation 10 当前根目录完整单元测试为 194 项通过、0 项失败；最高层感知入口、正式模板适配合同、公开链接、版本和隐私检查均通过。
+- Foundation 10 新增 7 项最高层外部行为测试和 1 项参考合同测试：标准化视图保留文件名、标题条款层级、页表图定位、表格关系、引用位置和提取缺口；正式模板存在时控制章节、编号、表格和必填项，材料合同只检查内容责任；无模板时才返回明确标记为建议、非正式且可调整的推荐提纲。
+- OCR 不确定、表格关系丢失和图示无法恢复三类缺口在显式关联高风险 Claim 时阻断并取消允许陈述效力；低风险依赖只记录缺口。核心未实现 DOCX、PDF、Excel、OCR 或图像解析器，运行时继续只使用 Python 标准库且未新增第三方依赖。
+- Foundation 10 完整验证中，三个 CLI 烟测退出码为 `2`、`2`、`0`；四个产品 JSON 和两个既有前向 JSON 解析通过，根目录 Skill 校验返回 `Skill is valid!`。旧 `outputs/yangqi-tech-writing-v1.1.0-rc.3` 副本独立通过 66 项测试、Skill 校验和四个产品 JSON 解析；该只读回归不表示 Foundation 10 已写入旧发布候选。
+- 代码审查后补充证据冲突与提取缺口并存、整份新建与材料集阻断不被 `two_stage` 覆盖两项组合回归；证据处理动作与 `extraction_gap_action` 分开记录，定位可用性检查复用同一规则。
 - Foundation 05 当前根目录完整单元测试为 186 项通过、0 项失败；七类场景正向识别、复合材料联合路由、公开合同链接和既有稳定行为均通过。
 - Foundation 05 新增 7 个七类场景正向案例、2 个确定性合成复合材料案例、8 项最高层接缝外部行为测试和 1 项复合路由参考合同测试。初步设计评审汇报保留 `engineering_construction`、`design`、`presentation` 主场景和 `review_acceptance` 局部场景；科研课题结题验收汇报保留 `research_project`、`final_acceptance` 及同一复合关系。
 - 复合路由分别输出主、局部场景的适用内容和保护边界，局部内容采用更严格的 `in_place`；缺少专用材料合同时在新建、续写和局部任务中均加载两个既有场景基础合同，支持级别保持 `recognition_coverage` 或 `basic_support`。初设正文、科研结题验收材料、工程结题验收汇报及仅引用复合材料名称的近失配仍保持原身份。合成夹具标记为 `deterministic-synthetic-fixture`、`model_execution: false`，不构成深度支持、联审支持、前向验证或真实复合材料表现证据。

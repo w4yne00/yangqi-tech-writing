@@ -18,6 +18,7 @@ REQUIRED_FILES = [
     "references/protected-spans.md",
     "references/evidence-policy.md",
     "references/statement-force-policy.md",
+    "references/formal-template-adaptation.md",
     "references/material-set-review.md",
     "references/writing-preparation.md",
     "references/project-context.md",
@@ -84,7 +85,7 @@ class StructureTests(unittest.TestCase):
         self.assertLess(len(content.splitlines()), 500)
         section = content.split("## 固定执行顺序", 1)[1].split("\n## ", 1)[0]
         order = [
-            "场景", "保护项", "证据", "陈述效力", "材料关系",
+            "标准化视图", "正式模板", "场景", "保护项", "证据", "陈述效力", "材料关系",
             "项目上下文", "Tier", "档位", "scope", "改写", "两遍复读",
             "质量闸门",
         ]
